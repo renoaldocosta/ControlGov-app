@@ -50,7 +50,7 @@ def run():
     
     # Coluna 1: Logo da empresa
     with col1:
-        st.image("../ControlGov/app/data/images/Logo_500_500.svg", width=230)
+        st.image("../ControlGov/app/data/images/Logo_500_500.png", width=230)
     
     # Coluna 2: Título e descrição centralizados
     with col2:
