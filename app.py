@@ -52,7 +52,7 @@ def run():
     # Coluna 1: Logo da empresa
     with col1:
         # Usa o caminho absoluto para o arquivo
-        image_path = os.path.abspath("../ControlGov/app/data/images/Logo_500_500.png")
+        image_path = os.path.abspath("./app/data/images/Logo_500_500.svg")
         st.image(image_path, width=230)
         #st.image("../ControlGov/app/data/images/Logo_500_500.png", width=230)
     
