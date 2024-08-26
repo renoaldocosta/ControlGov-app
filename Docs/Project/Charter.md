@@ -2,53 +2,86 @@
 
 ## Business background
 
-* Who is the client, what business domain the client is in.
-* What business problems are we trying to address?
+* **Cliente:** Câmaras e Prefeituras Municipais do eixo Bahia|Sergipe.
+* **Domínio de Negócio:** Gestão Pública, Controle Interno, Finanças Públicas.
+* **Problemas de Negócio:** 
+  * Dificuldade na gestão e monitoramento eficaz das finanças públicas devido à complexidade dos sistemas de contabilidade existentes.
+  * Falta de interfaces intuitivas e painéis de controle que facilitem a visualização clara dos gastos públicos.
+  * Incapacidade de identificar padrões suspeitos ou anomalias nas despesas financeiras, comprometendo a transparência e a segurança.
+  * Necessidade de previsões orçamentárias precisas para evitar déficits ou superávits desnecessários.
+
+
 
 ## Scope
-* What data science solutions are we trying to build?
-* What will we do?
-* How is it going to be consumed by the customer?
+
+* **Soluções de Ciência de Dados a Serem Desenvolvidas:**
+  * Dashboard interativo para visualização referente à despesa pública.
+  * Modelos de aprendizado de máquina para classificação automática de credores e detecção de anomalias em registros financeiros.
+  * Ferramentas de análise para previsão de tendências sazonais e necessidades orçamentárias.
+
+* **O que faremos:**
+  * Coletar dados financeiros dos Portais de Transparência, central de dados do governo e sistemas internos de contabilidade.
+  * Realizar análise exploratória de dados (EDA) para entender a estrutura e qualidade dos dados.
+  * Desenvolver e implementar modelos de aprendizado de máquina para atender às necessidades identificadas.
+  * Criar uma aplicação web utilizando Streamlit para disponibilizar os resultados para os Controles Internos.
+
+* **Consumo pelo Cliente:**
+  * A solução será acessível via interface web, permitindo que os Controles Internos das câmaras e prefeituras municipais utilizem a aplicação para monitorar e analisar as finanças públicas de seus municípios de forma eficiente e intuitiva.
+
 
 ## Personnel
-* Who are on this project:
-	* Microsoft:
-		* Project lead
-		* PM
-		* Data scientist(s)
-		* Account manager
-	* Client:
-		* Data administrator
-		* Business contact
+
+* ControlGov:
+  - **Administrador de Dados:** Renoaldo Costa
+* Client:
+  - **Testador:** Gidelma dos Santos Bomfim (Pinhão/SE)
+  - **Contato de Negócios de Prefeitura:** Raimunda Alvez (Pojuca/BA)
+  - **Contato de Negócios de Câmara:** Sérgio Benedito (Nilo Peçanha/BA)
+  - **Contato de Negócios de Câmara:** Dárcio Piatã (Piatã/BA)
 	
+
 ## Metrics
-* What are the qualitative objectives? (e.g. reduce user churn)
-* What is a quantifiable metric  (e.g. reduce the fraction of users with 4-week inactivity)
-* Quantify what improvement in the values of the metrics are useful for the customer scenario (e.g. reduce the  fraction of users with 4-week inactivity by 20%) 
-* What is the baseline (current) value of the metric? (e.g. current fraction of users with 4-week inactivity = 60%)
-* How will we measure the metric? (e.g. A/B test on a specified subset for a specified period; or comparison of performance after implementation to baseline)
+* **Objetivos Qualitativos:**
+  * Melhorar a eficiência do monitoramento financeiro e a transparência nos gastos públicos.
+  * Facilitar a identificação de fraudes, erro e má gestão dos recursos públicos.
+
+* **Métricas Quantitativas:**
+  * Reduzir o tempo médio necessário para análises financeiras em pelo menos 50%.
+  * Atingir uma precisão de 95% na detecção de anomalias e padrões suspeitos.
+  * Melhorar a acurácia das previsões orçamentárias em pelo menos 80% comparado aos métodos tradicionais.
+  * Alcançar uma satisfação do usuário de 85% em termos de facilidade de uso da aplicação.
+
+* **Baseline e Metodologia de Medição:**
+  * **Baseline:** Tempo atual de análise financeira, precisão na detecção de anomalias e previsões orçamentárias serão registrados antes da implementação.
+  * **Medidas:** Acompanhamento contínuo através de feedback dos usuários, análise de logs da aplicação e comparações periódicas com os valores de baseline.
 
 ## Plan
-* Phases (milestones), timeline, short description of what we'll do in each phase.
+  1. **Planejamento e Definição de Escopo:** Identificar stakeholders, definir objetivos detalhados, criar o Project Charter. *(15 dias)*
+  2. **Aquisição e Entendimento dos Dados:** Coleta de dados, EDA, validação de dados. *(15 dias)*
+  3. **Desenvolvimento de Modelos:** Criação e teste de modelos de aprendizado de máquina para classificação de credores e detecção de anomalias. *(1 mês)*
+  4. **Desenvolvimento do Dashboard:** Implementação da interface web usando Streamlit, integração dos modelos de ML. *(1 mês)*
+  5. **Testes e Validação:** Testes com usuários finais, ajuste de funcionalidades, melhoria contínua. *(1 mês)*
+  6. **Implementação em Produção:** Lançamento da aplicação, treinamento de usuários, documentação. *(15 dias)*
+
 
 ## Architecture
-* Data
-  * What data do we expect? Raw data in the customer data sources (e.g. on-prem files, SQL, on-prem Hadoop etc.)
-* Data movement from on-prem to Azure using ADF or other data movement tools (Azcopy, EventHub etc.) to move either
-  * all the data, 
-  * after some pre-aggregation on-prem,
-  * Sampled data enough for modeling 
+* **Dados:**
+  * **Fontes de Dados:** Dados financeiros dos Portais de Transparência, dados abertos do governo e sistemas internos de contabilidade.
+  * **Movimentação de Dados:** Utilização de APIs, webscraping, RPA e exportação de arquivos CSV e JSON para coleta de dados.
+  * **Armazenamento e Processamento:** Utilização de ferramentas como selenium para webscraping e RPA, pandas para processamento e transformação de dados, scikit-learn e TensorFlow para modelagem.
+  * **Ferramentas de Análise:** Dashboards interativos construídos com Streamlit, hospedados em servidor seguro para acesso dos usuários.
 
-* What tools and data storage/analytics resources will be used in the solution e.g.,
-  * ASA for stream aggregation
-  * HDI/Hive/R/Python for feature construction, aggregation and sampling
-  * AzureML for modeling and web service operationalization
-* How will the score or operationalized web service(s) (RRS and/or BES) be consumed in the business workflow of the customer? If applicable, write down pseudo code for the APIs of the web service calls.
-  * How will the customer use the model results to make decisions
-  * Data movement pipeline in production
-  * Make a 1 slide diagram showing the end to end data flow and decision architecture
-    * If there is a substantial change in the customer's business workflow, make a before/after diagram showing the data flow.
+* **Uso de Resultados:**
+  * A solução permitirá que os Controles Internos das câmaras e prefeituras municipais visualizem os resultados em tempo real, facilitando a tomada de decisões informadas e baseadas em dados.
+  * A automação de tarefas e a detecção de anomalias serão incorporadas ao fluxo de trabalho diário dos usuários.
+
+* **Diagramas de Fluxo de Dados:**
+  * Criar diagramas mostrando o fluxo de dados desde a coleta até a visualização e uso dos resultados para facilitar o entendimento do processo.
+
 
 ## Communication
-* How will we keep in touch? Weekly meetings?
-* Who are the contact persons on both sides?
+* **Reuniões Mensais:** Reuniões semanais de acompanhamento com a equipe de projeto para monitorar o progresso e ajustar o cronograma conforme necessário.
+* **Relatórios de Progresso Mensais:** Relatórios mensais para stakeholders para manter todos informados sobre o progresso do projeto.
+* **Contato de Comunicação:**
+  - **Equipe Técnica:** Whatsapp
+  - **Cliente:** Whatsapp
