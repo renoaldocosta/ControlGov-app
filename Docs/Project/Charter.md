@@ -1,6 +1,6 @@
 # Project Charter
 
-## Business background
+### Business background
 
 * **Cliente:** Câmaras e Prefeituras Municipais do eixo Bahia|Sergipe.
 * **Domínio de Negócio:** Gestão Pública, Controle Interno, Finanças Públicas.
@@ -12,7 +12,7 @@
 
 
 
-## Scope
+### Scope
 
 * **Soluções de Ciência de Dados a Serem Desenvolvidas:**
   * Dashboard interativo para visualização referente à despesa pública.
@@ -29,7 +29,7 @@
   * A solução será acessível via interface web, permitindo que os Controles Internos das câmaras e prefeituras municipais utilizem a aplicação para monitorar e analisar as finanças públicas de seus municípios de forma eficiente e intuitiva.
 
 
-## Personnel
+### Personnel
 
 * ControlGov:
   - **Administrador de Dados:** Renoaldo Costa
@@ -40,7 +40,7 @@
   - **Contato de Negócios de Câmara:** Dárcio Piatã (Piatã/BA)
 	
 
-## Metrics
+### Metrics
 * **Objetivos Qualitativos:**
   * Melhorar a eficiência do monitoramento financeiro e a transparência nos gastos públicos.
   * Facilitar a identificação de fraudes, erro e má gestão dos recursos públicos.
@@ -55,7 +55,7 @@
   * **Baseline:** Tempo atual de análise financeira, precisão na detecção de anomalias e previsões orçamentárias serão registrados antes da implementação.
   * **Medidas:** Acompanhamento contínuo através de feedback dos usuários, análise de logs da aplicação e comparações periódicas com os valores de baseline.
 
-## Plan
+### Plan
   1. **Planejamento e Definição de Escopo:** Identificar stakeholders, definir objetivos detalhados, criar o Project Charter. *(15 dias)*
   2. **Aquisição e Entendimento dos Dados:** Coleta de dados, EDA, validação de dados. *(15 dias)*
   3. **Desenvolvimento de Modelos:** Criação e teste de modelos de aprendizado de máquina para classificação de credores e detecção de anomalias. *(1 mês)*
@@ -64,7 +64,7 @@
   6. **Implementação em Produção:** Lançamento da aplicação, treinamento de usuários, documentação. *(15 dias)*
 
 
-## Architecture
+### Architecture
 * **Dados:**
   * **Fontes de Dados:** Dados financeiros dos Portais de Transparência, dados abertos do governo e sistemas internos de contabilidade.
   * **Movimentação de Dados:** Utilização de APIs, webscraping, RPA e exportação de arquivos CSV e JSON para coleta de dados.
@@ -79,7 +79,7 @@
   * Criar diagramas mostrando o fluxo de dados desde a coleta até a visualização e uso dos resultados para facilitar o entendimento do processo.
 
 
-## Communication
+### Communication
 * **Reuniões Mensais:** Reuniões semanais de acompanhamento com a equipe de projeto para monitorar o progresso e ajustar o cronograma conforme necessário.
 * **Relatórios de Progresso Mensais:** Relatórios mensais para stakeholders para manter todos informados sobre o progresso do projeto.
 * **Contato de Comunicação:**

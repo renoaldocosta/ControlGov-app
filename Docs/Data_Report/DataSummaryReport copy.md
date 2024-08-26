@@ -1,3 +1,9 @@
+---
+noteId: "0947b78063ff11efae5d6b430dce5d9d"
+tags: []
+
+---
+
 # Data Summary Report
 
 
@@ -43,6 +49,31 @@
 
 - Estimativa de 4 MB de dados financeiros por ano, dependendo do tamanho do município e da quantidade de transações financeiras.
 
+## Data Quality Summary
+
+### Integridade dos Dados
+
+
+
+### Validação de Dados
+
+
+
+## Target Variable
+
+### Variável-Alvo Principal
+
+
+
+### Definição
+
+
+
+### Uso
+
+
+
+## Individual Variables
 ### Variáveis Principais
 
 1. **NumeroDocumeto:** Identificador único de cada transação financeira.
@@ -69,4 +100,19 @@
 8. **Fonte:** Código e descrição da fonte de recursos.
    - **Tipo de Dados:** Categórico (nominal).
 
+
+### Descrição Estatística
+
+## Variable Ranking
+
+### Rankeamento de Variáveis
+
+## Relationship Between Explanatory Variables and Target Variable
+
+### Análise de Correlação
+
+### Visualização
+
+
+## Conclusão
 
