@@ -1,0 +1,248 @@
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook
+
+FullName : C:\TPs\24E3_5\ControlGov\.streamlit
+
+FullName : C:\TPs\24E3_5\ControlGov\app
+
+FullName : C:\TPs\24E3_5\ControlGov\Code
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data
+
+FullName : C:\TPs\24E3_5\ControlGov\.env
+
+FullName : C:\TPs\24E3_5\ControlGov\.gitignore
+
+FullName : C:\TPs\24E3_5\ControlGov\app copy.py
+
+FullName : C:\TPs\24E3_5\ControlGov\app.py
+
+FullName : C:\TPs\24E3_5\ControlGov\files_list.txt
+
+FullName : C:\TPs\24E3_5\ControlGov\README.md
+
+FullName : C:\TPs\24E3_5\ControlGov\requirements.txt
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook\assets
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook\tmp
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook\assets\images
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook\tmp\chrome
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook\tmp\.gitignore
+
+FullName : C:\TPs\24E3_5\ControlGov\.notebook\tmp\drawIOAppForChrome.html
+
+FullName : C:\TPs\24E3_5\ControlGov\.streamlit\config.toml
+
+FullName : C:\TPs\24E3_5\ControlGov\app\__pycache__
+
+FullName : C:\TPs\24E3_5\ControlGov\app\config
+
+FullName : C:\TPs\24E3_5\ControlGov\app\data
+
+FullName : C:\TPs\24E3_5\ControlGov\app\model
+
+FullName : C:\TPs\24E3_5\ControlGov\app\pages
+
+FullName : C:\TPs\24E3_5\ControlGov\app\services
+
+FullName : C:\TPs\24E3_5\ControlGov\app\config\cfg.json
+
+FullName : C:\TPs\24E3_5\ControlGov\app\data\dataset
+
+FullName : C:\TPs\24E3_5\ControlGov\app\data\images
+
+FullName : C:\TPs\24E3_5\ControlGov\app\data\dataset\Despesa - Prefeitura Municipal de POJUCA.json
+
+FullName : C:\TPs\24E3_5\ControlGov\app\data\images\Banner_1000_300.png
+
+FullName : C:\TPs\24E3_5\ControlGov\app\data\images\Banner_1000_300.svg
+
+FullName : C:\TPs\24E3_5\ControlGov\app\model\__init__.py
+
+FullName : C:\TPs\24E3_5\ControlGov\app\pages\__pycache__
+
+FullName : C:\TPs\24E3_5\ControlGov\app\pages\About.py
+
+FullName : C:\TPs\24E3_5\ControlGov\app\pages\Contact.py
+
+FullName : C:\TPs\24E3_5\ControlGov\app\pages\__pycache__\About.cpython-312.pyc
+
+FullName : C:\TPs\24E3_5\ControlGov\app\pages\__pycache__\Contact.cpython-312.pyc
+
+FullName : C:\TPs\24E3_5\ControlGov\app\services\__init__.py
+
+FullName : C:\TPs\24E3_5\ControlGov\app\__pycache__\main.cpython-312.pyc
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\1_Business_Understanding
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\2_Data_Acquisition_and_Understanding
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\3_Modeling
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\4_Deployment
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\5_Evaluation_Customer_Acceptance
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\Readme.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\1_Business_Understanding\Readme.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\2_Data_Acquisition_and_Understanding\datapipeline.json
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\2_Data_Acquisition_and_Understanding\dataPrep.py
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\2_Data_Acquisition_and_Understanding\Readme.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\3_Modeling\model.R
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\3_Modeling\Readme.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\4_Deployment\operationalization.py
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\4_Deployment\Readme.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Code\5_Evaluation_Customer_Acceptance\Readme.md
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\etc
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Include
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Lib
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\pyvenv.cfg
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\etc\jupyter
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\etc\jupyter\nbconfig
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\etc\jupyter\nbconfig\notebook.d
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\etc\jupyter\nbconfig\notebook.d\pydeck.json
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Lib\site-packages
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Lib\site-packages\__pycache__
+
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\activate
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\activate.bat
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\Activate.ps1
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\deactivate.bat
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\f2py.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\jsonschema.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\markdown-it.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\normalizer.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\numpy-config.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\pip.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\pip3.12.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\pip3.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\pygmentize.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\python.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\pythonw.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\streamlit.cmd
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\streamlit.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\Scripts\watchmedo.exe
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share\jupyter
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share\jupyter\nbextensions
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share\jupyter\nbextensions\pydeck
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share\jupyter\nbextensions\pydeck\extensionRequires.js
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share\jupyter\nbextensions\pydeck\index.js
+
+FullName : C:\TPs\24E3_5\ControlGov\ControlGov\share\jupyter\nbextensions\pydeck\index.js.map
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Dictionaries
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Report
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Project
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\README.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Dictionaries\data-dictionary-from-sql-table.PNG
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Dictionaries\Raw-Data-Dictionary.csv
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Dictionaries\ReadMe.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Report\Data Defintion.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Report\DataPipeline.txt
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Report\DataSummaryReport.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Report\DataSummaryReport.md.bk
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Data_Report\ReadMe.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model\Baseline
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model\Model 1
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model\FinalReport.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model\README.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model\Baseline\Baseline Models.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Model\Model 1\Model Report.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Project\Charter.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Project\Charter.md.bk
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Project\Exit Report.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Project\README.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Docs\Project\System Architecture.docx
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\For_Modeling
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\Processed
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\Raw
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\README.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\For_Modeling\modelling.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\Processed\processed.md
+
+FullName : C:\TPs\24E3_5\ControlGov\Sample_Data\Raw\rawData.md
+
