@@ -45,12 +45,16 @@ def load_page(module_name):
 
 
 def run():
+
     # Dividindo a página em duas colunas
     col1, col2 = st.columns([1,2])
     
     # Coluna 1: Logo da empresa
     with col1:
-        st.image("../ControlGov/app/data/images/Logo_500_500.png", width=230)
+        # Usa o caminho absoluto para o arquivo
+        image_path = os.path.abspath("../ControlGov/app/data/images/Logo_500_500.png")
+        st.image(image_path, width=230)
+        #st.image("../ControlGov/app/data/images/Logo_500_500.png", width=230)
     
     # Coluna 2: Título e descrição centralizados
     with col2:
