@@ -21,13 +21,13 @@ def load_markdown_file(file_path):
     
 
 def show_file_md(path):
-    # Caminho para o seu arquivo Markdown
     file_path = path
 
-    # Carregar o conteúdo do arquivo Markdown
-    markdown_content = load_markdown_file(file_path)
+    if not os.path.exists(file_path):
+        st.error(f"Arquivo não encontrado: {file_path}")
+        return
 
-    # Configurar a aplicação Streamlit
+    markdown_content = load_markdown_file(file_path)
     st.markdown(markdown_content)
     
     
@@ -100,15 +100,16 @@ def run():
     )
     
     
-    # Show charter
-    st.divider()
-    file_path = os.path.abspath('')
-    show_file_md('Docs\Project\Charter.md')
+    # Definir o diretório base
+    base_path = os.path.dirname(os.path.abspath(__file__))
 
-    # Show Data Summary Report
-    st.divider()
-    file_path = os.path.abspath('Docs\Data_Report\DataSummaryReport.md')
-    show_file_md('Docs\Data_Report\DataSummaryReport.md')
+    # Caminho absoluto para Charter.md
+    charter_path = os.path.join(base_path, '..', '..', 'Docs', 'Project', 'Charter.md')
+    show_file_md(charter_path)
+
+    # Caminho absoluto para DataSummaryReport.md
+    data_summary_path = os.path.join(base_path, '..', '..', 'Docs', 'Data_Report', 'DataSummaryReport.md')
+    show_file_md(data_summary_path)
 
 
 
