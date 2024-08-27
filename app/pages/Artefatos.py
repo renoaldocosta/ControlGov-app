@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 
 # Função para criar caixas estilizadas com tons de azul
 def styled_box(header, content, header_bg_color, content_bg_color):
@@ -101,11 +102,13 @@ def run():
     
     # Show charter
     st.divider()
-    show_file_md(r'C:\TPs\24E3_5\ControlGov\Docs\Project\Charter.md')
+    file_path = os.path.abspath('')
+    show_file_md('Docs\Project\Charter.md')
 
     # Show Data Summary Report
     st.divider()
-    show_file_md(r'C:\TPs\24E3_5\ControlGov\Docs\Data_Report\DataSummaryReport.md')
+    file_path = os.path.abspath('Docs\Data_Report\DataSummaryReport.md')
+    show_file_md('Docs\Data_Report\DataSummaryReport.md')
 
 
 
