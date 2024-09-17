@@ -1,3 +1,10 @@
 streamlit
 pandas
 streamlit-option-menu
+jupyter
+glob2
+beautifulsoup4
+lxml
+cssselect
+pytz
+pyarrow

@@ -3,6 +3,9 @@ import os
 import sys
 from streamlit_option_menu import option_menu
 
+from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
+
+
 # Set the page configuration with title and favicon
 st.set_page_config(
     page_title="ControlGov",
