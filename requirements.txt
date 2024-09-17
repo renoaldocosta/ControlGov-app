@@ -9,3 +9,5 @@ cssselect
 pytz
 pyarrow
 mypy
+pymongo
+python-dotenv
