@@ -25,8 +25,8 @@ def load_css():
     """Function to inject CSS for hiding elements and setting styles."""
     css = """
         <style>
-        #MainMenu {visibility: hidden;} /* Hide the Streamlit main menu */
-        header {visibility: hidden;} /* Hide the entire header */
+         /*#MainMenu {visibility: hidden;} /* Hide the Streamlit main menu */
+         /*header {visibility: hidden;} /* Hide the entire header */
         .st-emotion-cache-12fmjuu {padding-top: 0rem; margin-top: 0rem;} /* Reduce padding and margin for the header */
         .css-18e3th9 {padding-top: 0rem; padding-bottom: 0rem; background-color: white;} /* Adjust the padding and set background of the main content area */
         .css-1d391kg {background-color: white;} /* Set the background color of the sidebar */
@@ -78,8 +78,8 @@ def main():
     with st.sidebar:
         selected_page = option_menu(
             "ControlGov",  # Menu title
-            ["Introdução","Artefatos", "Sobre",  ],  # Menu options including Home
-            icons=["house","clipboard", "info-circle", ],  # Icons for each option
+            ["Introdução","Artefatos","CM Pinhão/SE", "Sobre",  ],  # Menu options including Home
+            icons=["house","clipboard","building", "info-circle", ],  # Icons for each option
             menu_icon="cast",  # Icon for the menu
             default_index=0,  # Default selected option
             styles={
@@ -97,6 +97,9 @@ def main():
     elif selected_page == "Artefatos":
         show_banner()
         load_page("Artefatos")
+    elif selected_page == "CM Pinhão/SE":
+        show_banner()
+        load_page("CM_Pinhao_SE")
 
 if __name__ == "__main__":
     main()
