@@ -397,7 +397,7 @@ if __name__ == '__main__':
     #df_geral = pega_df_geral(manual=True, config=config)
     
     df_geral = pega_df_geral(manual=False, config='')
-    df_geral = df_geral.head(3)
+    #df_geral = df_geral.head(3)
     df_completo = retornar_df_completo(df_geral)
 
     # Inserir no MongoDB, evitando duplicação com base nos campos 'Número', 'Data', 'Atualizado'
