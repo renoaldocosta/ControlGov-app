@@ -29,6 +29,26 @@ def testa_conexao_mongodb(db:str, collection:str):
         print(e)
         raise SystemExit("Unable to connect to the database. Please check your URI.")
 
+
+
+def format_df(df_empenhos):
+    df = df_empenhos.copy()
+
+    df = df.drop(columns=['_id'])
+
+    # Remover o símbolo de moeda 'R$' e os pontos dos milhares
+    value_columns = ['Alteração', 'Empenhado', 'Liquidado', 'Pago' ]
+    for colunm in value_columns:
+        df[colunm] = df[colunm].str.replace(r'R\$ ?', '', regex=True).str.replace('.', '').str.replace(',', '.')
+        df[colunm] = df[colunm].astype(float)
+
+    data_columns = ['Data', 'Atualizado'] 
+    for column in data_columns:
+        df[column] = pd.to_datetime(df[column])
+        
+    return df
+
+
 @st.cache_data
 def get_empenhos(db, collection):
     mongodb_collection = testa_conexao_mongodb(db, collection)
@@ -39,11 +59,14 @@ def get_empenhos(db, collection):
         if 'Item(ns)' in df_empenhos.columns:
         
             df_empenhos['Item(ns)'] = df_empenhos['Item(ns)'].apply(lambda x: str(x) if isinstance(x, list) else x)
-
+            
+        df_empenhos = format_df(df_empenhos)
+                
         st.session_state.df_empenhos = df_empenhos
     else:
         df_empenhos = st.session_state.df_empenhos
         return df_empenhos
+
 
 def run():
     mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
