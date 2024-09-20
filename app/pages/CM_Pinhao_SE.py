@@ -168,7 +168,7 @@ def elemento_despesa(df):
 
 def sub_elemento_despesa(df):
     pass
-    sub_elementos = list(df['Subelemento'].unique())
+    sub_elementos = sorted(list(df['Subelemento'].unique()))
     
     selected_sub_elementos = st.multiselect("Subelemento de Despesa", sub_elementos, placeholder="Selecione um ou mais subelementos de despesa")
     
@@ -177,6 +177,23 @@ def sub_elemento_despesa(df):
     # Atualiza o session_state
     st.session_state['sub_elemento_despesa'] = df
     
+    return df
+
+
+def Categorias_de_base_legal(df):
+    #base_legal = sorted(set(['DISPENSADO'] + list(df[df['Categorias de base legal'].str.split('/').str[0] != 'DISPENSADO']['Categorias de base legal'])))
+    base_legal = sorted(set(list(df['Categorias de base legal'])))
+    # Exibe o seletor múltiplo com as opções filtradas
+    selected_base_legal = st.multiselect("Base Legal", base_legal, placeholder="Selecione uma ou mais bases legais")
+
+    # Se uma ou mais bases legais forem selecionadas, filtra o DataFrame
+    if selected_base_legal:
+        
+        df = df[df['Categorias de base legal'].isin(selected_base_legal)]
+
+    # Atualiza o session_state com o DataFrame filtrado
+    st.session_state['base_legal'] = df
+
     return df
 
 
@@ -192,6 +209,7 @@ def filters():
             df = credores(df)
             df = elemento_despesa(df)
             df = sub_elemento_despesa(df)
+            df = Categorias_de_base_legal(df)
             
             return df
         except Exception as e:
