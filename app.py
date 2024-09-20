@@ -73,20 +73,8 @@ def run():
 def main():
     """Main function to set up the app."""
     load_css()
-
-    # Sidebar menu using option_menu
-    with st.sidebar:
-        selected_page = option_menu(
-            "ControlGov",  # Menu title
-            ["Introdução","Artefatos","CM Pinhão/SE", "Sobre",  ],  # Menu options including Home
-            icons=["house","clipboard","building", "info-circle", ],  # Icons for each option
-            menu_icon="cast",  # Icon for the menu
-            default_index=0,  # Default selected option
-            styles={
-                "nav-link-selected": {"background-color": "#1E3D59"},  # Change selected option color
-                "nav-link": {"--hover-color": "#eee"}  # Optional: change hover color
-            },
-        )
+    from app.model.sidebar import sidebar
+    selected_page = sidebar()
 
     # Dynamic content loading based on the selected menu option
     if selected_page == "Introdução":
