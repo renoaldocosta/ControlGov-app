@@ -5,6 +5,7 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from pygwalker.api.streamlit import StreamlitRenderer
 
 # Dicionário para traduzir os meses para português
 month_translation = {
@@ -42,6 +43,8 @@ def format_df(df_empenhos):
     df = df_empenhos.copy()
 
     df = df.drop(columns=['_id'])
+    
+    df['Credor'] = df['Credor'].str.split(' - ').apply(lambda x: f'{x[1]} - {x[0]}' if len(x) > 1 else x[0])
 
     # Remover o símbolo de moeda 'R$' e os pontos dos milhares
     value_columns = ['Alteração', 'Empenhado', 'Liquidado', 'Pago' ]
@@ -140,6 +143,24 @@ def month_filter(df):
     return df
 
 
+def credores(df):
+    credores = ["Todos"] + list(df['Credor'].unique())
+    
+    selected_creditors = st.multiselect("Credores", credores, default="Todos")
+    
+    if selected_creditors:
+        if "Todos" in selected_creditors:
+            pass
+        else:
+            # Filtra o DataFrame com base nos credores selecionados
+            df = df[df['Credor'].isin(selected_creditors)]
+    
+    # Atualiza o session_state
+    st.session_state['credores'] = df
+    
+    return df
+
+
 def filters():
     with st.sidebar:
         try:
@@ -149,7 +170,7 @@ def filters():
             
             df = year_filter(df)
             df = month_filter(df)
-            
+            #df = credores(df)
             
             return df
         except Exception as e:
@@ -157,6 +178,18 @@ def filters():
             pass
             st.write(f"Erro ao carregar os dados. {e}")
             
+
+
+def pygwalker(df):
+    #from pygwalker.api.streamlit import StreamlitRenderer
+    if not df.empty:
+        # Converter colunas de Timestamp para string
+        for col in df.columns:
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                df[col] = df[col].astype(str)
+        
+        pyg_app = StreamlitRenderer(df, appearance='light',theme_key='vega')
+        pyg_app.explorer()
 
 
 def run():
@@ -171,12 +204,17 @@ def run():
     # Retrieve data from MongoDB as a DataFrame
     df_empenhos = get_empenhos(db, collection)
     
+    tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
+    
     df = filters()
     
-    st.write(df.head())
-    
+    with tab1:
+        st.write(df.head())
+    with tab2:
+        pygwalker(df_empenhos)
+
     with st.expander("Amostra dos dados: Empenhos"):
-        st.dataframe(df.sample(5).reset_index(drop=True))
+        st.dataframe(df.head().reset_index(drop=True))
     
 
     metrics(df)

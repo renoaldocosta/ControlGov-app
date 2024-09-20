@@ -11,3 +11,4 @@ pyarrow
 mypy
 pymongo
 python-dotenv
+pygwalker
