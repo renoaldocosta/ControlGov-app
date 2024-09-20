@@ -72,7 +72,6 @@ def get_empenhos(db, collection):
             
         df_empenhos = format_df(df_empenhos)
                 
-        st.session_state['df_empenhos'] = df_empenhos
         return df_empenhos
     else:
         df_empenhos = st.session_state.df_empenhos
@@ -122,16 +121,13 @@ def month_filter(df):
     df['Mês'] = df['Mês_Numero'].map(month_translation)
 
     # Lista de meses em ordem correta
-    all_months = ['Todos'] + list(month_translation.values())
+    all_months = list(month_translation.values())
 
     # Filtro por mês, com os meses em ordem correta
-    months = st.multiselect("Mês", all_months, default='Todos')
+    months = st.multiselect("Mês", all_months, placeholder="Selecione um ou mais meses")
 
     # Aplicar o filtro por mês
     if months:
-        if months == ['Todos']:
-            pass
-        else:
             df = df[df['Mês'].isin(months)]
     
     # Ordenar o DataFrame pelo número do mês (Mês_Numero)
@@ -144,19 +140,42 @@ def month_filter(df):
 
 
 def credores(df):
-    credores = ["Todos"] + list(df['Credor'].unique())
+    credores = list(df['Credor'].unique())
     
-    selected_creditors = st.multiselect("Credores", credores, default="Todos")
+    selected_creditors = st.multiselect("Credores / Fornecedores", credores, placeholder="Selecione um ou mais credores")
     
     if selected_creditors:
-        if "Todos" in selected_creditors:
-            pass
-        else:
-            # Filtra o DataFrame com base nos credores selecionados
             df = df[df['Credor'].isin(selected_creditors)]
     
     # Atualiza o session_state
     st.session_state['credores'] = df
+    
+    return df
+
+
+def elemento_despesa(df):
+    elementos = list(df['Elemento de Despesa'].unique())
+    
+    selected_elementos = st.multiselect("Elemento de Despesa", elementos, placeholder="Selecione um ou mais elementos de despesa")
+    
+    if selected_elementos:
+        df = df[df['Elemento de Despesa'].isin(selected_elementos)]    
+    # Atualiza o session_state
+    st.session_state['elemento_despesa'] = df
+    
+    return df
+
+
+def sub_elemento_despesa(df):
+    pass
+    sub_elementos = list(df['Subelemento'].unique())
+    
+    selected_sub_elementos = st.multiselect("Subelemento de Despesa", sub_elementos, placeholder="Selecione um ou mais subelementos de despesa")
+    
+    if selected_sub_elementos:
+        df = df[df['Subelemento'].isin(selected_sub_elementos)]    
+    # Atualiza o session_state
+    st.session_state['sub_elemento_despesa'] = df
     
     return df
 
@@ -170,7 +189,9 @@ def filters():
             
             df = year_filter(df)
             df = month_filter(df)
-            #df = credores(df)
+            df = credores(df)
+            df = elemento_despesa(df)
+            df = sub_elemento_despesa(df)
             
             return df
         except Exception as e:
@@ -203,6 +224,7 @@ def run():
     mongodb_collection = testa_conexao_mongodb(db, collection)
     # Retrieve data from MongoDB as a DataFrame
     df_empenhos = get_empenhos(db, collection)
+    st.session_state['df_empenhos'] = df_empenhos
     
     tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
     
