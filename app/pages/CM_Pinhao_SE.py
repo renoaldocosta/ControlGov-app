@@ -3,6 +3,8 @@ from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragrap
 import pandas as pd
 import pandas as pd
 import os
+import time
+
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pygwalker.api.streamlit import StreamlitRenderer
@@ -15,27 +17,28 @@ month_translation = {
 }
 
 def testa_conexao_mongodb(db:str, collection:str):
-    # Carregar automaticamente o arquivo .env no mesmo diretório ou em diretórios pais
-    load_dotenv()
+    with st.spinner("Testando Conexão..."):
+        # Carregar automaticamente o arquivo .env no mesmo diretório ou em diretórios pais
+        load_dotenv()
 
-    # pega db_password do ambiente
-    db_password = os.environ.get('db_password')
+        # pega db_password do ambiente
+        db_password = os.environ.get('db_password')
 
-    uri = f"mongodb+srv://renoaldo_teste:{db_password}@cluster0.zmdkz1p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+        uri = f"mongodb+srv://renoaldo_teste:{db_password}@cluster0.zmdkz1p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-    # Create a new client and connect to the server
-    client = MongoClient(uri)
+        # Create a new client and connect to the server
+        client = MongoClient(uri)
 
-    # Send a ping to confirm a successful connection
-    try:
-        client.admin.command('ping')
-        print("Pinged your deployment. You successfully connected to MongoDB!")
-        db = client[db]
-        collection = db[collection]
-        return collection
-    except Exception as e:
-        print(e)
-        raise SystemExit("Unable to connect to the database. Please check your URI.")
+        # Send a ping to confirm a successful connection
+        try:
+            client.admin.command('ping')
+            print("Pinged your deployment. You successfully connected to MongoDB!")
+            db = client[db]
+            collection = db[collection]
+            return collection
+        except Exception as e:
+            print(e)
+            raise SystemExit("Unable to connect to the database. Please check your URI.")
 
 
 
@@ -61,21 +64,31 @@ def format_df(df_empenhos):
 
 @st.cache_data
 def get_empenhos(db, collection):
-    mongodb_collection = testa_conexao_mongodb(db, collection)
-    if 'df_empenhos' not in st.session_state:
-        df_empenhos = pd.DataFrame(list(mongodb_collection.find()))
-    
-        # Tratar a coluna 'Item(ns)' para evitar mistura de tipos
-        if 'Item(ns)' in df_empenhos.columns:
+    with st.spinner("Carregando dados..."):
+        progress_text = "Operação em Progresso. Por favor aguarde."
+        my_bar = st.progress(0, text=progress_text)
+
+        for percent_complete in range(100):
+            time.sleep(0.01)
+            my_bar.progress(percent_complete + 1, text=progress_text)
+        time.sleep(1)
+        my_bar.empty()
         
-            df_empenhos['Item(ns)'] = df_empenhos['Item(ns)'].apply(lambda x: str(x) if isinstance(x, list) else x)
+        mongodb_collection = testa_conexao_mongodb(db, collection)
+        if 'df_empenhos' not in st.session_state:
+            df_empenhos = pd.DataFrame(list(mongodb_collection.find()))
+        
+            # Tratar a coluna 'Item(ns)' para evitar mistura de tipos
+            if 'Item(ns)' in df_empenhos.columns:
             
-        df_empenhos = format_df(df_empenhos)
+                df_empenhos['Item(ns)'] = df_empenhos['Item(ns)'].apply(lambda x: str(x) if isinstance(x, list) else x)
                 
-        return df_empenhos
-    else:
-        df_empenhos = st.session_state.df_empenhos
-        return df_empenhos
+            df_empenhos = format_df(df_empenhos)
+                    
+            return df_empenhos
+        else:
+            df_empenhos = st.session_state.df_empenhos
+            return df_empenhos
 
 
 def metrics(df):
@@ -200,18 +213,21 @@ def Categorias_de_base_legal(df):
 def filters():
     with st.sidebar:
         try:
-            df = st.session_state.df_empenhos
-            
-            st.markdown("## Filtros")
-            
-            df = year_filter(df)
-            df = month_filter(df)
-            df = credores(df)
-            df = elemento_despesa(df)
-            df = sub_elemento_despesa(df)
-            df = Categorias_de_base_legal(df)
-            
-            return df
+            with st.expander("## Filtros", expanded=True):
+                    
+                df = st.session_state.df_empenhos
+                level = 'h4'
+                mkd_text("Período", level=level, position='center')
+                df = year_filter(df)
+                df = month_filter(df)
+                
+                mkd_text("Outros Filtros", level=level, position='center')
+                df = credores(df)
+                df = elemento_despesa(df)
+                df = sub_elemento_despesa(df)
+                df = Categorias_de_base_legal(df)
+                
+                return df
         except Exception as e:
             
             pass
@@ -233,13 +249,16 @@ def pygwalker(df):
 
 def run():
     
-        
     
     mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
     # Define database and collection
     db, collection = 'CMP', 'EMPENHOS_DETALHADOS_STAGE'
-    # Test connection to MongoDB
+    
+    
+        # Test connection to MongoDB
     mongodb_collection = testa_conexao_mongodb(db, collection)
+    
+        
     # Retrieve data from MongoDB as a DataFrame
     df_empenhos = get_empenhos(db, collection)
     st.session_state['df_empenhos'] = df_empenhos
