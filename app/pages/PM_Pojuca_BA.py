@@ -10,10 +10,6 @@ import streamlit as st
 from st_aggrid import AgGrid
 
 import pandas as pd
-import locale
-
-# Definir o locale para o Brasil
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 # Dicionário para traduzir os meses para português
 month_translation = {
@@ -85,6 +81,13 @@ def get_empenhos(db, collection):
         df_empenhos = st.session_state.df_empenhos
         return df_empenhos
 
+def format_currency(value):
+    if value != '':
+        # Função para formatar valores no estilo brasileiro (R$ 1.000,00)
+        return f"R$ {value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    else:
+        return 0
+        
 
 def metrics(df):
     if 'df_escolhido' in st.session_state:
@@ -105,6 +108,7 @@ def metrics(df):
     valor_maximo = df['valor'].max()
 
 
+    # Remover a dependência de locale para formatação de moeda
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total de Registros", total_registros)
@@ -115,11 +119,11 @@ def metrics(df):
 
     col4, col5, col6 = st.columns(3)
     with col4:
-        st.metric("Valor Mínimo", f"{locale.currency(valor_minimo, grouping=True)}")
+        st.metric("Valor Mínimo", format_currency(valor_minimo))  # Formatando com a nova função
     with col5:
-        st.metric("Valor Médio", f"{locale.currency(valor_medio, grouping=True)}")
+        st.metric("Valor Médio", format_currency(valor_medio))    # Formatando com a nova função
     with col6:
-        st.metric("Valor Máximo", f"{locale.currency(valor_maximo, grouping=True)}")
+        st.metric("Valor Máximo", format_currency(valor_maximo))  # Formatando com a nova função
     
     
     
@@ -267,6 +271,7 @@ def valores(df):
         # Permitir que o usuário cole o valor com formato brasileiro
         valor_colado = st.text_input("Valor", value="0,00")  # Coloque o valor padrão no formato brasileiro
         if valor_colado == '':
+            st.warning("Deixar o valor em branco aplicará o filtro com o valor padrão igual a 0,00")
             valor_colado = "0,00"
         
         # Converter o valor colado para um número decimal
