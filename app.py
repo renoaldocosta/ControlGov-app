@@ -19,7 +19,7 @@ sys.path.append(pages_dir)
 
 def show_banner():
     """Function to display the banner image."""
-    st.image("./app/data/images/Banner_1000_300.svg", use_column_width=True)
+    st.image("./app/data/images/Banner_1000_300_Azul_shaped.svg", use_column_width=True)
 
 def load_css():
     """Function to inject CSS for hiding elements and setting styles."""

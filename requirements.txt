@@ -12,3 +12,5 @@ mypy
 pymongo
 python-dotenv
 pygwalker
+itables
+streamlit-aggrid
