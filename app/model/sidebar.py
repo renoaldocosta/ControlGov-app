@@ -7,8 +7,8 @@ def sidebar():
     with st.sidebar:
         selected_page = option_menu(
             "ControlGov",  # Menu title
-            ["Introdução","Artefatos","PM Pojuca/BA","CM Pinhão/SE", "Sobre",  ],  # Menu options including Home
-            icons=["house","clipboard","building","building", "info-circle", ],  # Icons for each option
+            ["Introdução","Artefatos","PM Pojuca/BA","CM Pinhão/SE", "Sobre","teste"  ],  # Menu options including Home
+            icons=["house","clipboard","building","building", "info-circle", "info-circle"],  # Icons for each option
             menu_icon="cast",  # Icon for the menu
             default_index=0,  # Default selected option
             styles={

@@ -91,6 +91,9 @@ def main():
     elif selected_page == "PM Pojuca/BA":
         show_banner()
         load_page("PM_Pojuca_BA")
+    elif selected_page == "teste":
+        show_banner()
+        load_page("teste_mongo")
 
 if __name__ == "__main__":
     main()
