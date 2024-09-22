@@ -420,26 +420,6 @@ def display_aggrid_with_links(
     # Constrói as opções do grid
     gridOptions = gb.build()
     
-    # Define o CSS personalizado para remover o logo do AgGrid
-    custom_css = """
-    <style>
-    /* Oculta o logo do AgGrid */
-    .ag-theme-balham .ag-header .ag-header-row .ag-header-cell .ag-header-cell-label .ag-header-icon {
-        display: none !important;
-    }
-    /* Caso o logo esteja em outro local, adicione seletores adicionais */
-    .ag-theme-balham .ag-footer .ag-tool-panel-wrapper {
-        display: none !important;
-    }
-    /* Outra abordagem genérica */
-    .ag-logo {
-        display: none !important;
-    }
-    </style>
-    """
-    # Renderiza o CSS personalizado no Streamlit
-    st.markdown(custom_css, unsafe_allow_html=True)
-    
     # Renderiza o AgGrid no Streamlit
     AgGrid(
         df,
