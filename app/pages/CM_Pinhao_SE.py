@@ -526,7 +526,8 @@ def run():
             update_mode=GridUpdateMode.NO_UPDATE
         )
     with tab2:
-        pygwalker(df_empenhos)
+        pass
+        #pygwalker(df_empenhos)
 
     
     
