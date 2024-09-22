@@ -1,100 +1,81 @@
-import streamlit as st
-from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
-import pandas as pd
-import pandas as pd
+# -*- coding: utf-8 -*-
 import os
-from dotenv import load_dotenv
-from pymongo import MongoClient
-from pygwalker.api.streamlit import StreamlitRenderer
-import streamlit as st
-from st_aggrid import AgGrid
 
 import pandas as pd
+import streamlit as st
+from dotenv import load_dotenv
+from pygwalker.api.streamlit import StreamlitRenderer
+from st_aggrid import AgGrid
+from itables.streamlit import interactive_table
+
+# Imports locais
+from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
 
 # Dicionário para traduzir os meses para português
-month_translation = {
+MONTH_TRANSLATION = {
     1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
     5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
     9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
 }
 
-def testa_conexao_mongodb(db:str, collection:str):
-    # Carregar automaticamente o arquivo .env no mesmo diretório ou em diretórios pais
-    load_dotenv()
+def format_df(df):
+    """
+    Formata o DataFrame removendo colunas indesejadas, formatando valores e datas.
 
-    # pega db_password do ambiente
-    db_password = os.environ.get('db_password')
+    Args:
+        df (pd.DataFrame): DataFrame original.
 
-    uri = f"mongodb+srv://renoaldo_teste:{db_password}@cluster0.zmdkz1p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-
-    # Create a new client and connect to the server
-    client = MongoClient(uri)
-
-    # Send a ping to confirm a successful connection
-    try:
-        client.admin.command('ping')
-        print("Pinged your deployment. You successfully connected to MongoDB!")
-        db = client[db]
-        collection = db[collection]
-        return collection
-    except Exception as e:
-        print(e)
-        raise SystemExit("Unable to connect to the database. Please check your URI.")
-
-
-
-def format_df(df_empenhos):
-    df = df_empenhos.copy()
-
-    df = df.drop(columns=['_id'])
-    
-    df['Credor'] = df['Credor'].str.split(' - ').apply(lambda x: f'{x[1]} - {x[0]}' if len(x) > 1 else x[0])
+    Returns:
+        pd.DataFrame: DataFrame formatado.
+    """
+    df = df.drop(columns=['_id'], errors='ignore')
+    df['Credor'] = df['Credor'].str.split(' - ').apply(
+        lambda x: f'{x[1]} - {x[0]}' if len(x) > 1 else x[0]
+    )
 
     # Remover o símbolo de moeda 'R$' e os pontos dos milhares
-    value_columns = ['Alteração', 'Empenhado', 'Liquidado', 'Pago' ]
-    for colunm in value_columns:
-        df[colunm] = df[colunm].str.replace(r'R\$ ?', '', regex=True).str.replace('.', '').str.replace(',', '.')
-        df[colunm] = df[colunm].astype(float)
+    value_columns = ['Alteração', 'Empenhado', 'Liquidado', 'Pago']
+    for column in value_columns:
+        df[column] = (
+            df[column]
+            .str.replace(r'R\$ ?', '', regex=True)
+            .str.replace('.', '')
+            .str.replace(',', '.')
+            .astype(float)
+        )
 
-    data_columns = ['Data', 'Atualizado'] 
+    data_columns = ['Data', 'Atualizado']
     for column in data_columns:
         df[column] = pd.to_datetime(df[column])
-        
+
     return df
 
-
-@st.cache_data
-def get_empenhos(db, collection):
-    mongodb_collection = testa_conexao_mongodb(db, collection)
-    if 'df_empenhos' not in st.session_state:
-        df_empenhos = pd.DataFrame(list(mongodb_collection.find()))
-    
-        # Tratar a coluna 'Item(ns)' para evitar mistura de tipos
-        if 'Item(ns)' in df_empenhos.columns:
-        
-            df_empenhos['Item(ns)'] = df_empenhos['Item(ns)'].apply(lambda x: str(x) if isinstance(x, list) else x)
-            
-        df_empenhos = format_df(df_empenhos)
-                
-        return df_empenhos
-    else:
-        df_empenhos = st.session_state.df_empenhos
-        return df_empenhos
-
 def format_currency(value):
+    """
+    Formata um valor numérico para o estilo brasileiro de moeda.
+
+    Args:
+        value (float): Valor numérico.
+
+    Returns:
+        str: Valor formatado como moeda brasileira.
+    """
     if value != '':
-        # Função para formatar valores no estilo brasileiro (R$ 1.000,00)
         return f"R$ {value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     else:
-        return 0
-        
+        return "R$ 0,00"
 
 def metrics(df):
+    """
+    Exibe métricas do DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame para cálculo das métricas.
+    """
     if 'df_escolhido' in st.session_state:
         df_escolhido = st.session_state['df_escolhido']
         mkd_text_divider(f"Métricas de {df_escolhido}", level='subheader', position='center')
-    
-    
+
     # Converter colunas de data para o tipo datetime
     df['data'] = pd.to_datetime(df['data'])
     df['dataEmpenho'] = pd.to_datetime(df['dataEmpenho'])
@@ -102,13 +83,12 @@ def metrics(df):
     # Cálculo das métricas
     total_registros = df.shape[0]
     data_mais_recente = df['data'].max().strftime('%d/%m/%Y')  # Converte a data para string
-    data_mais_antiga = df['data'].min().strftime('%d/%m/%Y')  # Converte a data para string
+    data_mais_antiga = df['data'].min().strftime('%d/%m/%Y')    # Converte a data para string
     valor_minimo = df['valor'].min()
     valor_medio = df['valor'].mean()
     valor_maximo = df['valor'].max()
 
-
-    # Remover a dependência de locale para formatação de moeda
+    # Exibir métricas
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total de Registros", total_registros)
@@ -119,139 +99,107 @@ def metrics(df):
 
     col4, col5, col6 = st.columns(3)
     with col4:
-        st.metric("Valor Mínimo", format_currency(valor_minimo))  # Formatando com a nova função
+        st.metric("Valor Mínimo", format_currency(valor_minimo))
     with col5:
-        st.metric("Valor Médio", format_currency(valor_medio))    # Formatando com a nova função
+        st.metric("Valor Médio", format_currency(valor_medio))
     with col6:
-        st.metric("Valor Máximo", format_currency(valor_maximo))  # Formatando com a nova função
-    
-    
-    
-    
-    
-
+        st.metric("Valor Máximo", format_currency(valor_maximo))
 
 def year_filter(df):
-    # Garantir que a coluna 'Data' está no formato datetime
-    df['data'] = pd.to_datetime(df['data'], errors='coerce')
+    """
+    Aplica filtro por ano no DataFrame.
 
-    # Definir o intervalo de anos para o slider
+    Args:
+        df (pd.DataFrame): DataFrame original.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado por ano.
+    """
+    df['data'] = pd.to_datetime(df['data'], errors='coerce')
     first_year = df['data'].dt.year.min()
     last_year = df['data'].dt.year.max()
-    
 
-    # Filtrar o DataFrame pelo intervalo de anos
     if first_year != last_year:
-        # Slider para selecionar o intervalo de anos
         selected_years = st.slider("Ano", min_value=first_year, max_value=last_year, value=(first_year, last_year))
         df = df[df['data'].dt.year.between(*selected_years)]
-        
     else:
         st.caption(f'Ano selecionado: {first_year}')
-        selected_years = first_year
-        
+        selected_years = [first_year]
+
     st.session_state['selected_years'] = selected_years
-        
     return df
 
 def month_filter(df):
-    # Adicionar coluna com o número do mês para ordenação
+    """
+    Aplica filtro por mês no DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame original.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado por mês.
+    """
     df['Mês_Numero'] = df['data'].dt.month
-    
-    # Traduzir os meses para português
-    df['Mês'] = df['Mês_Numero'].map(month_translation)
+    df['Mês'] = df['Mês_Numero'].map(MONTH_TRANSLATION)
+    all_months = list(MONTH_TRANSLATION.values())
 
-    # Lista de meses em ordem correta
-    all_months = list(month_translation.values())
-
-    # Filtro por mês, com os meses em ordem correta
     months = st.multiselect("Mês", all_months, placeholder="Selecione um ou mais meses")
-
-    # Aplicar o filtro por mês
     if months:
-            df = df[df['Mês'].isin(months)]
-    
-    # Ordenar o DataFrame pelo número do mês (Mês_Numero)
+        df = df[df['Mês'].isin(months)]
+
     df = df.sort_values(by='Mês_Numero')
-    
-    # Salvar os meses selecionados no session_state
     st.session_state['selected_months'] = months
-    
+
     return df
 
+def credores_filter(df):
+    """
+    Aplica filtro por credores no DataFrame.
 
-def credores(df):
+    Args:
+        df (pd.DataFrame): DataFrame original.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado por credores.
+    """
     credores = list(df['credor'].unique())
-    
     selected_creditors = st.multiselect("Credores / Fornecedores", credores, placeholder="Selecione um ou mais credores")
-    
+
     if selected_creditors:
-            df = df[df['credor'].isin(selected_creditors)]
-    
-    # Atualiza o session_state
-    st.session_state['credor'] = df
-    
+        df = df[df['credor'].isin(selected_creditors)]
+        st.session_state['credor'] = selected_creditors
+
     return df
 
-def orgao(df):
+def orgao_filter(df):
+    """
+    Aplica filtro por órgão no DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame original.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado por órgão.
+    """
     orgaos = list(df['orgao'].unique())
-    
     selected_orgaos = st.multiselect("Órgão", orgaos, placeholder="Selecione um ou mais órgãos")
-    
+
     if selected_orgaos:
-            df = df[df['orgao'].isin(selected_orgaos)]
-    
-    # Atualiza o session_state
-    st.session_state['orgao'] = df
-    
-    return df
-
-def elemento_despesa(df):
-    elementos = list(df['Elemento de Despesa'].unique())
-    
-    selected_elementos = st.multiselect("Elemento de Despesa", elementos, placeholder="Selecione um ou mais elementos de despesa")
-    
-    if selected_elementos:
-        df = df[df['Elemento de Despesa'].isin(selected_elementos)]    
-    # Atualiza o session_state
-    st.session_state['elemento_despesa'] = df
-    
-    return df
-
-
-def sub_elemento_despesa(df):
-    pass
-    sub_elementos = sorted(list(df['Subelemento'].unique()))
-    
-    selected_sub_elementos = st.multiselect("Subelemento de Despesa", sub_elementos, placeholder="Selecione um ou mais subelementos de despesa")
-    
-    if selected_sub_elementos:
-        df = df[df['Subelemento'].isin(selected_sub_elementos)]    
-    # Atualiza o session_state
-    st.session_state['sub_elemento_despesa'] = df
-    
-    return df
-
-
-def Categorias_de_base_legal(df):
-    #base_legal = sorted(set(['DISPENSADO'] + list(df[df['Categorias de base legal'].str.split('/').str[0] != 'DISPENSADO']['Categorias de base legal'])))
-    base_legal = sorted(set(list(df['Categorias de base legal'])))
-    # Exibe o seletor múltiplo com as opções filtradas
-    selected_base_legal = st.multiselect("Base Legal", base_legal, placeholder="Selecione uma ou mais bases legais")
-
-    # Se uma ou mais bases legais forem selecionadas, filtra o DataFrame
-    if selected_base_legal:
-        
-        df = df[df['Categorias de base legal'].isin(selected_base_legal)]
-
-    # Atualiza o session_state com o DataFrame filtrado
-    st.session_state['base_legal'] = df
+        df = df[df['orgao'].isin(selected_orgaos)]
+        st.session_state['orgao'] = selected_orgaos
 
     return df
-
 
 def converter_valor_brasileiro(valor_str):
-    # Remove o ponto dos milhares e substitui a vírgula por ponto
+    """
+    Converte uma string de valor monetário brasileiro para float.
+
+    Args:
+        valor_str (str): Valor monetário em formato brasileiro.
+
+    Returns:
+        float or None: Valor numérico ou None se não for possível converter.
+    """
     valor_str = valor_str.replace('.', '').replace(',', '.')
     try:
         return float(valor_str)
@@ -259,24 +207,27 @@ def converter_valor_brasileiro(valor_str):
         st.error("O valor inserido não é válido. Verifique o formato.")
         return None
 
-def valores(df):
+def valores_filter(df):
+    """
+    Aplica filtro por valor no DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame original.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado por valor.
+    """
     allow_filter_value = st.checkbox("Filtrar dados por valor", value=False)
-    
     if not allow_filter_value:
         return df
     else:
-        # Filtrar por valores
         tipo = st.radio("Tipo de Filtro", ['Menor', 'Igual', 'Maior'], horizontal=True)
-        
-        # Permitir que o usuário cole o valor com formato brasileiro
-        valor_colado = st.text_input("Valor", value="0,00")  # Coloque o valor padrão no formato brasileiro
+        valor_colado = st.text_input("Valor", value="0,00")
         if valor_colado == '':
             st.warning("Deixar o valor em branco aplicará o filtro com o valor padrão igual a 0,00")
             valor_colado = "0,00"
-        
-        # Converter o valor colado para um número decimal
+
         filter_value = converter_valor_brasileiro(valor_colado)
-        
         if filter_value is not None:
             if tipo == 'Menor':
                 df_filtrado = df[df['valor'] < filter_value]
@@ -285,125 +236,74 @@ def valores(df):
             else:
                 df_filtrado = df[df['valor'] > filter_value]
 
-            # Verificar se o DataFrame está vazio após o filtro
             if df_filtrado.empty:
                 st.warning("Nenhum registro encontrado para o filtro selecionado. Filtro não aplicado.")
-                return df  # Retorna o DataFrame original para evitar erros em outras partes do código
+                return df
             else:
-                return df_filtrado  # Retorna o DataFrame filtrado
+                return df_filtrado
         else:
-            return df  # Retorna o DataFrame original se o valor não for válido
-
-def apply_filters_2(df):
-    if 'selected_years' in st.session_state:
-        df = df[df['data'].dt.year.isin(st.session_state['selected_years'])]
-    if 'selected_months' in st.session_state:
-        df = df[df['Mês'].isin(st.session_state['selected_months'])]
-    if 'credor' in st.session_state:
-        df = df[df['credor'].isin(st.session_state['credor'])]
-    if 'orgao' in st.session_state:
-        df = df[df['orgao'].isin(st.session_state['orgao'])]
-    if 'elemento_despesa' in st.session_state:
-        df = df[df['Elemento de Despesa'].isin(st.session_state['elemento_despesa'])]
-    if 'sub_elemento_despesa' in st.session_state:
-        df = df[df['Subelemento'].isin(st.session_state['sub_elemento_despesa'])]
-    if 'base_legal' in st.session_state:
-        df = df[df['Categorias de base legal'].isin(st.session_state['base_legal'])]
-    
-    return df
-
-# Função para adicionar CSS personalizado
-def add_custom_css():
-    st.markdown("""
-        <style>
-        /* Mudar a cor do fundo e do texto selecionado */
-        div[data-baseweb="radio"] > div {
-            color: #1E3D59;  /* Cor do texto */
-        }
-        div[data-baseweb="radio"] > div:hover {
-            background-color: #1E3D59;  /* Cor de fundo ao passar o mouse */
-            color: white;  /* Cor do texto ao passar o mouse */
-        }
-        div[data-baseweb="radio"] input:checked + div {
-            background-color: #1E3D59;  /* Cor de fundo quando selecionado */
-            color: white;  /* Cor do texto quando selecionado */
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    
-def filters(df_empenho, df_liquidacao, df_pagamento):
-    with st.sidebar:
-        try:
-            st.markdown("## Filtros")
-            base = st.radio("Selecione a base de dados", ['Empenhos', 'Liquidação', 'Pagamento'])
-            if base == 'Empenhos':
-                df = df_empenho
-                st.session_state['df_escolhido'] = 'Empenho'
-            elif base == 'Liquidação':
-                df = df_liquidacao
-                st.session_state['df_escolhido'] = 'Liquidação'
-            elif base == 'Pagamento':
-                df = df_pagamento
-                st.session_state['df_escolhido'] = 'Pagamento'
-                
-            df = year_filter(df)
-            df = month_filter(df)
-            df = credores(df)
-            df = orgao(df)
-            df = valores(df)
-            
-            '''
-            df = elemento_despesa(df)
-            df = sub_elemento_despesa(df)
-            df = Categorias_de_base_legal(df)'''
-        
             return df
-        except Exception as e:
-            
-            pass
-            st.write(f"Erro ao carregar os dados. {e}")
-            
 
+def filters(df_empenho, df_liquidacao, df_pagamento):
+    """
+    Aplica filtros no DataFrame selecionado.
 
-def pygwalker(df):
-    #from pygwalker.api.streamlit import StreamlitRenderer
-    if not df.empty:
-        # Converter colunas de Timestamp para string
-        for col in df.columns:
-            if pd.api.types.is_datetime64_any_dtype(df[col]):
-                df[col] = df[col].astype(str)
-        
-        pyg_app = StreamlitRenderer(df, appearance='light',theme_key='vega')
-        pyg_app.explorer()
+    Args:
+        df_empenho (pd.DataFrame): DataFrame de empenhos.
+        df_liquidacao (pd.DataFrame): DataFrame de liquidações.
+        df_pagamento (pd.DataFrame): DataFrame de pagamentos.
 
+    Returns:
+        pd.DataFrame: DataFrame filtrado.
+    """
+    with st.sidebar:
+        st.markdown("## Filtros")
+        base = st.radio("Selecione a base de dados", ['Empenhos', 'Liquidação', 'Pagamento'])
+        if base == 'Empenhos':
+            df = df_empenho
+            st.session_state['df_escolhido'] = 'Empenho'
+        elif base == 'Liquidação':
+            df = df_liquidacao
+            st.session_state['df_escolhido'] = 'Liquidação'
+        else:
+            df = df_pagamento
+            st.session_state['df_escolhido'] = 'Pagamento'
 
+        df = year_filter(df)
+        df = month_filter(df)
+        df = credores_filter(df)
+        df = orgao_filter(df)
+        df = valores_filter(df)
 
+        return df
 
-
-# Função para carregar os dados com cache
 @st.cache_data
 def load_data(file, file_type):
+    """
+    Carrega dados de um arquivo.
+
+    Args:
+        file (UploadedFile): Arquivo carregado pelo usuário.
+        file_type (str): Tipo do arquivo ('json' ou 'csv').
+
+    Returns:
+        pd.DataFrame: DataFrame com os dados carregados.
+    """
     if file_type == 'json':
         return pd.read_json(file)
     elif file_type == 'csv':
         return pd.read_csv(file)
 
-def itables(df):
-    from itables.streamlit import interactive_table
-
-    # Display a DF
-    interactive_table(df)
-
-    # Set a caption
-    interactive_table(df, caption="A Pandas DataFrame rendered as an interactive DataTable")
-
-    # AddCopy/CSV/Excel download buttons
-    interactive_table(df, buttons=["copyHtml5", "csvHtml5", "excelHtml5"])
-
-
 def rename_columns(df):
-    # Dicionário com os nomes das colunas antigos como chaves e os novos nomes como valores
+    """
+    Renomeia colunas do DataFrame para nomes mais amigáveis.
+
+    Args:
+        df (pd.DataFrame): DataFrame original.
+
+    Returns:
+        pd.DataFrame: DataFrame com colunas renomeadas.
+    """
     novos_nomes_colunas = {
         'NumeroDocumeto': 'Número do Documento',
         'empenho': 'Empenho',
@@ -425,126 +325,67 @@ def rename_columns(df):
         'Mês_Numero': 'Número do Mês',
         'Mês': 'Mês'
     }
-
-    # Renomear as colunas do DataFrame
     df.rename(columns=novos_nomes_colunas, inplace=True)
-    
-    
     return df
 
 def remove_columns(df, columns):
-    return df.drop(columns=columns, errors='ignore')
-    
+    """
+    Remove colunas indesejadas do DataFrame.
 
-    
+    Args:
+        df (pd.DataFrame): DataFrame original.
+        columns (list): Lista de colunas a serem removidas.
+
+    Returns:
+        pd.DataFrame: DataFrame sem as colunas especificadas.
+    """
+    return df.drop(columns=columns, errors='ignore')
+
 def run():
+    """
+    Função principal que executa a aplicação Streamlit.
+    """
     mkd_text("Prefeitura Municipal de Pojuca - BA", level='title', position='center')
     mkd_text("", level='h7', position='center')
+
     if 'dados_carregados' not in st.session_state:
-        
         with st.expander("Carregar dados"):
             st.write('Para utilizar o módulo de análise, é necessário carregar os dados: Empenho, Liquidação e Pagamento. Favor carregar cada um dos arquivos separadamente.')
             col1, col2, col3 = st.columns(3)
             with col1:
                 file_upload_empenho = st.file_uploader("Carregar Dados de Empenho", type=['csv', 'json'])
-                
             with col2:
                 file_upload_liquidacao = st.file_uploader("Carregar Dados de Liquidação", type=['csv', 'json'])
             with col3:
                 file_upload_pagamento = st.file_uploader("Carregar Dados de Pagamento", type=['csv', 'json'])
-            
+
             if file_upload_empenho and file_upload_liquidacao and file_upload_pagamento:
                 if st.button("Carregar Dados", use_container_width=True):
-                    # Carregar os dados e armazenar no session_state usando cache
-                    
-                    if file_upload_empenho is not None:
-                        
-                        df_empenho = load_data(file_upload_empenho, 'json' if file_upload_empenho.name.endswith('.json') else 'csv')
-                        if 'df_empenho' in st.session_state:
-                            del st.session_state['df_empenho']
-                            st.session_state['df_empenho'] = df_empenho
-                        else:
-                            st.session_state['df_empenho'] = df_empenho
-                    
-                    if file_upload_liquidacao is not None:
-                        df_liquidacao = load_data(file_upload_liquidacao, 'json' if file_upload_liquidacao.name.endswith('.json') else 'csv')
-                        if 'df_liquidacao' in st.session_state:
-                            del st.session_state['df_liquidacao']
-                            st.session_state['df_liquidacao'] = df_liquidacao
-                        else:
-                            st.session_state['df_liquidacao'] = df_liquidacao
-                    
-                    if file_upload_pagamento is not None:
-                        df_pagamento = load_data(file_upload_pagamento, 'json' if file_upload_pagamento.name.endswith('.json') else 'csv')
-                        if 'df_pagamento' in st.session_state:
-                            del st.session_state['df_pagamento']
-                            st.session_state['df_pagamento'] = df_pagamento
-                        else:
-                            st.session_state['df_pagamento'] = df_pagamento
-                    
+                    df_empenho = load_data(file_upload_empenho, 'json' if file_upload_empenho.name.endswith('.json') else 'csv')
+                    st.session_state['df_empenho'] = df_empenho
+
+                    df_liquidacao = load_data(file_upload_liquidacao, 'json' if file_upload_liquidacao.name.endswith('.json') else 'csv')
+                    st.session_state['df_liquidacao'] = df_liquidacao
+
+                    df_pagamento = load_data(file_upload_pagamento, 'json' if file_upload_pagamento.name.endswith('.json') else 'csv')
+                    st.session_state['df_pagamento'] = df_pagamento
+
                     st.session_state['dados_carregados'] = True
-                    
-    else:
+    else:   
         df_empenho = st.session_state['df_empenho']
         df_liquidacao = st.session_state['df_liquidacao']
         df_pagamento = st.session_state['df_pagamento']
         df = filters(df_empenho, df_liquidacao, df_pagamento)
         metrics(df)
         mkd_text("", level='h7', position='center')
-        
+
         mkd_text_divider("Dados Brutos", level='subheader', position='center')
         df_to_show = df.copy()
         df_to_show = rename_columns(df_to_show)
-        columns_to_remove = ['Unidade','Município','Mês','Número do Mês','Código Órgão','Código da Unidade']
+        columns_to_remove = ['Unidade', 'Município', 'Mês', 'Número do Mês', 'Código Órgão', 'Código da Unidade']
         df_to_show = remove_columns(df_to_show, columns_to_remove)
         AgGrid(df_to_show)
-        
-        
-        
-        '''tab1, tab2, tab3, tab4 = st.tabs(['Empenhos', 'Liquidação', 'Pagamento', 'Exploração de dados'])
-        with tab1:
-            df_empenho = st.session_state['df_empenho']
-            AgGrid(df_empenho)
-        with tab2:
-            df_liquidacao = st.session_state['df_liquidacao']
-            st.write(df_liquidacao.head())
-        with tab3:
-            df_pagamento = st.session_state['df_pagamento']
-            st.write(df_pagamento.head())
-        with tab4:
-            option = st.selectbox("Selecione o tipo de dados", ['Empenhos', 'Liquidação', 'Pagamento'])
-            if option == 'Empenhos':
-                pygwalker(df_empenho)
-            elif option == 'Liquidação':
-                pygwalker(df_liquidacao)
-            else:
-                pygwalker(df_pagamento)'''
-        
-        #itables(df)
-        
-                
-                
-                
-    '''else:
-    
-    df_empenhos = get_empenhos(db, collection)
-    st.session_state['df_empenhos'] = df_empenhos
-    
-    tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
-    
-    df = filters()
-    
-    with tab1:
-        st.write(df.head())
-    with tab2:
-        pygwalker(df_empenhos)
 
-    with st.expander("Amostra dos dados: Empenhos"):
-        st.dataframe(df.head().reset_index(drop=True))
-    
-
-    metrics(df)'''
-    
 if __name__ == "__main__":
     st.session_state.clear()
     run()

@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import sys
 from streamlit_option_menu import option_menu
-
 from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
 
 
@@ -25,8 +24,8 @@ def load_css():
     """Function to inject CSS for hiding elements and setting styles."""
     css = """
         <style>
-        #MainMenu {visibility: hidden;} /* Hide the Streamlit main menu */
-        header {visibility: hidden;} /* Hide the entire header */
+        /*#MainMenu {visibility: hidden;} /* Hide the Streamlit main menu */
+        /*header {visibility: hidden;} /* Hide the entire header */
         .st-emotion-cache-12fmjuu {padding-top: 0rem; margin-top: 0rem;} /* Reduce padding and margin for the header */
         .css-18e3th9 {padding-top: 0rem; padding-bottom: 0rem; background-color: white;} /* Adjust the padding and set background of the main content area */
         .css-1d391kg {background-color: white;} /* Set the background color of the sidebar */
@@ -48,7 +47,6 @@ def load_page(module_name):
 
 
 def run():
-
     # Dividindo a página em duas colunas
     col1, col2 = st.columns([1,2])
     
