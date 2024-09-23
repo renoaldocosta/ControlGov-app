@@ -550,43 +550,42 @@ def run():
     
     
     
+    df_to_show = df.copy().sort_values(by='Data', ascending=False)
+    columns_to_remove = ['Poder', 'Função',"Subfunção","Item(ns)", 'Mês', 'Mês_Numero', 'Unid. Administradora','Unid. Orçamentária', 'Fonte de recurso']
+    df_to_show = remove_columns(df_to_show, columns_to_remove)
+    
+    # Nova ordem das colunas
+    new_column_order = [
+        "Número", "Data", "Subelemento", "Credor", "Alteração", "Empenhado",
+        "Liquidado", "Pago", "Atualizado", "link_Detalhes", "Elemento de Despesa",
+        "Projeto/Atividade", "Categorias de base legal", "Histórico"
+    ]
+
+    # Chama a função para reordenar as colunas
+    df_to_show = reorder_columns(df_to_show, new_column_order)
+
+    date_columns = ['Data', 'Atualizado']
+    df_to_show = format_data_columns(df_to_show, date_columns)
+    
+    # Lista de colunas para aplicar a formatação
+    currency_columns = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
+
+    # Aplica a função para formatar as colunas de moeda
+    df_to_show = apply_currency_format(df_to_show, currency_columns)
+
+    #st.dataframe(df_to_show, height=300, hide_index=True)
+    # Grid
+    # Define quais colunas são links
+    link_cols = ["link_Detalhes"]
+
+    # Define textos personalizados para os links (opcional)
+    link_texts = {
+        "link_Detalhes": "Ver Detalhes",
+    }
+
+    # Define as colunas que devem ser alinhadas à direita
+    right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
     with tab1:
-        df_to_show = df.copy().sort_values(by='Data', ascending=False)
-        columns_to_remove = ['Poder', 'Função',"Subfunção","Item(ns)", 'Mês', 'Mês_Numero', 'Unid. Administradora','Unid. Orçamentária', 'Fonte de recurso']
-        df_to_show = remove_columns(df_to_show, columns_to_remove)
-        
-        # Nova ordem das colunas
-        new_column_order = [
-            "Número", "Data", "Subelemento", "Credor", "Alteração", "Empenhado",
-            "Liquidado", "Pago", "Atualizado", "link_Detalhes", "Elemento de Despesa",
-            "Projeto/Atividade", "Categorias de base legal", "Histórico"
-        ]
-
-        # Chama a função para reordenar as colunas
-        df_to_show = reorder_columns(df_to_show, new_column_order)
-
-        date_columns = ['Data', 'Atualizado']
-        df_to_show = format_data_columns(df_to_show, date_columns)
-        
-        # Lista de colunas para aplicar a formatação
-        currency_columns = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
-
-        # Aplica a função para formatar as colunas de moeda
-        df_to_show = apply_currency_format(df_to_show, currency_columns)
-
-        #st.dataframe(df_to_show, height=300, hide_index=True)
-        # Grid
-        # Define quais colunas são links
-        link_cols = ["link_Detalhes"]
-
-        # Define textos personalizados para os links (opcional)
-        link_texts = {
-            "link_Detalhes": "Ver Detalhes",
-        }
-
-        # Define as colunas que devem ser alinhadas à direita
-        right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
-
         # Chama a função para exibir o DataFrame
         display_dataframe_with_links(
             df=df_to_show,
@@ -599,6 +598,8 @@ def run():
         )
         
         
+        #st.write(df_to_show.columns)
+    with tab2:
         # Chama a função para exibir o AgGrid com links e alinhamento personalizado
         display_aggrid_with_links(
             df=df_to_show,
@@ -609,29 +610,6 @@ def run():
             theme='balham',
             update_mode=GridUpdateMode.NO_UPDATE
         )
-    with tab2:
-        # Define quais colunas são links
-        link_cols = ["link_Detalhes"]
-
-        # Define textos personalizados para os links
-        link_texts = {
-            "link_Detalhes": "Ver Detalhes",
-        }
-
-        # Define as colunas que devem ser alinhadas à direita
-        right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
-
-        # Chama a função para exibir o DataFrame
-        display_dataframe_with_links(
-            df=df_to_show,
-            link_columns=link_cols,
-            link_text=link_texts,
-            right_align_columns=right_align_cols,
-            height=300,
-            theme='default',
-            use_data_editor=False  # Altere para True se desejar usar data_editor
-        )
-        pass
         #pygwalker(df_empenhos)
 
     

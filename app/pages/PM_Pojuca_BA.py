@@ -375,15 +375,14 @@ def gerar_botoes_download(df, nome_arquivo_csv, nome_arquivo_json):
 def gerar_nuvem_de_palavras(df, coluna):
     """Gera uma nuvem de palavras a partir de uma coluna de um DataFrame"""
     
-    st.title("Nuvem de Palavras - " + coluna)
+    mkd_text("", level='h7', position='center')
+    mkd_text_divider("Nuvem de Palavras", level='subheader', position='center')
+    mkd_text(f"{coluna}:", level='h4', position='center')
 
     # Verificar se a coluna existe no DataFrame
     if coluna not in df.columns:
         st.error(f"A coluna '{coluna}' não foi encontrada no dataframe.")
         return
-
-    # Exibir o DataFrame
-    st.subheader(f"DataFrame: {coluna}")
 
     # Extrair a coluna e remover valores nulos
     elementos = df[coluna].dropna()
@@ -404,10 +403,10 @@ def gerar_nuvem_de_palavras(df, coluna):
 
     max_words = st.sidebar.slider(
         "Número máximo de palavras",
-        min_value=50,
+        min_value=10,
         max_value=500,
         value=200,
-        step=50
+        step=10
     )
 
     colormap = st.sidebar.selectbox(
@@ -439,7 +438,6 @@ def gerar_nuvem_de_palavras(df, coluna):
     ax.axis('off')
     plt.tight_layout(pad=0)
 
-    st.subheader("Nuvem de Palavras")
     st.pyplot(fig)
     
     
@@ -489,6 +487,7 @@ def run():
         AgGrid(df_to_show, height=300, width='100%')
         gerar_botoes_download(df_to_show, 'dados.csv', 'dados.json')
         gerar_nuvem_de_palavras(df_to_show, 'Descrição Elemento Gestor')
+        #st.write(df_to_show.columns)
 
     if __name__ == "__main__":
         st.session_state.clear()
