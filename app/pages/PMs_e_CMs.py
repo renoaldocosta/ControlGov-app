@@ -489,7 +489,7 @@ def run():
         gerar_nuvem_de_palavras(df_to_show, 'Descrição Elemento Gestor')
         #st.write(df_to_show.columns)
 
-    if __name__ == "__main__":
-        st.session_state.clear()
-        run()
+if __name__ == "__main__":
+    st.session_state.clear()
+    run()
         
