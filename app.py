@@ -87,7 +87,7 @@ def main():
     selected_page = sidebar()
 
     # Função de depuração (remova após confirmar)
-    #list_pages_directory()
+    list_pages_directory()
 
     # Carregamento dinâmico de conteúdo com base na opção selecionada
     if selected_page == "Introdução":
@@ -104,6 +104,9 @@ def main():
     elif selected_page == "PMs & CMs/BA":
         show_banner()
         load_page("PMs_e_CMs")
+    elif selected_page == "E-TCM/BA":
+        show_banner()
+        load_page("tcm")
 
 if __name__ == "__main__":
     main()
