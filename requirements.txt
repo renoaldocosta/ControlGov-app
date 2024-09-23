@@ -11,8 +11,6 @@ pyarrow
 mypy
 pymongo
 python-dotenv
-pygwalker
-itables
 streamlit-aggrid
 wordcloud
 matplotlib
