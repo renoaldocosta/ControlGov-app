@@ -5,6 +5,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from pygwalker.api.streamlit import StreamlitRenderer
 from st_aggrid import AgGrid
+from itables.streamlit import interactive_table
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 # Imports locais
