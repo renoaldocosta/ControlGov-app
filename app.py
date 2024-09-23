@@ -103,10 +103,7 @@ def main():
         load_page("CM_Pinhao_SE")
     elif selected_page == "PMs & CMs/BA":
         show_banner()
-        load_page("PM_Pojuca_BA")
-    elif selected_page == "teste":
-        show_banner()
-        load_page("teste_mongo")
+        load_page("PMs_e_CMs")
 
 if __name__ == "__main__":
     main()
