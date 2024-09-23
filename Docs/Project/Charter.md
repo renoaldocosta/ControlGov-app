@@ -59,7 +59,7 @@
   1. **Planejamento e Definição de Escopo:** Identificar stakeholders, definir objetivos detalhados, criar o Project Charter. *(15 dias)*
   2. **Aquisição e Entendimento dos Dados:** Coleta de dados, EDA, validação de dados. *(15 dias)*
   3. **Desenvolvimento de Modelos:** Criação e teste de modelos de aprendizado de máquina para classificação de credores e detecção de anomalias. *(1 mês)*
-  4. **Desenvolvimento do Dashboard:** Implementação da interface web usando Streamlit, integração dos modelos de ML. *(1 mês)*
+  4. **Desenvolvimento do Dashboard:** Implementação da interface web, integração dos modelos de ML. *(1 mês)*
   5. **Testes e Validação:** Testes com usuários finais, ajuste de funcionalidades, melhoria contínua. *(1 mês)*
   6. **Implementação em Produção:** Lançamento da aplicação, treinamento de usuários, documentação. *(15 dias)*
 

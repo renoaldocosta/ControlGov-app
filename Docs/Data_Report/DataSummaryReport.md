@@ -19,10 +19,10 @@
 
 2. **Dados Abertos do Governo:**
    - **Descrição:** Conjunto de dados financeiros e orçamentários disponibilizados por órgãos centrais de governo, como Tribunal de Contas dos Municípios da Bahia.
-   - **Formato:** JSON.
+   - **Formato:** JSON/CSV.
    - **Frequência de Atualização:** Mensal.
    - **Tipo de Dados:** 
-      - Registro de Despesas (Pagamentos).
+      - Registro de Despesas (Empenho, Liquidação e Pagamentos).
     - **Objetivo de Uso:**
       - Monitorar diariamente os gastos públicos para detectar anomalias ou desvios.
       - Gerar relatórios de transparência financeira para uso interno.
@@ -41,7 +41,7 @@
 
 ### Volume de Dados
 
-- Estimativa de 4 MB de dados financeiros por ano, dependendo do tamanho do município e da quantidade de transações financeiras.
+- Estimativa de 1 a 5 MB de dados financeiros por ano por arquivo, dependendo do tamanho do município, da quantidade de transações financeiras e tecnologia de armazenamento.
 
 ### Variáveis Principais
 

@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from pygwalker.api.streamlit import StreamlitRenderer
 from st_aggrid import AgGrid
 from itables.streamlit import interactive_table
-
+from wordcloud import WordCloud, STOPWORDS
+import matplotlib.pyplot as plt
 # Imports locais
 from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
 
@@ -341,11 +342,112 @@ def remove_columns(df, columns):
     """
     return df.drop(columns=columns, errors='ignore')
 
+def gerar_botoes_download(df, nome_arquivo_csv, nome_arquivo_json):
+    # Converte o DataFrame para CSV
+    csv = df.to_csv(index=False)
+    
+    # Converte o DataFrame para JSON
+    json = df.to_json(orient='records')
+
+    # Cria duas colunas
+    col1, col2 = st.columns(2)
+
+    # Botão para download do CSV
+    with col1:
+        st.download_button(
+            label="Baixar dados em CSV",
+            data=csv,
+            file_name=nome_arquivo_csv,
+            mime='text/csv',
+            use_container_width=True
+        )
+
+    # Botão para download do JSON
+    with col2:
+        st.download_button(
+            label="Baixar dados em JSON",
+            data=json,
+            file_name=nome_arquivo_json,
+            mime='application/json',
+            use_container_width=True
+        )
+
+def gerar_nuvem_de_palavras(df, coluna):
+    """Gera uma nuvem de palavras a partir de uma coluna de um DataFrame"""
+    
+    st.title("Nuvem de Palavras - " + coluna)
+
+    # Verificar se a coluna existe no DataFrame
+    if coluna not in df.columns:
+        st.error(f"A coluna '{coluna}' não foi encontrada no dataframe.")
+        return
+
+    # Exibir o DataFrame
+    st.subheader(f"DataFrame: {coluna}")
+
+    # Extrair a coluna e remover valores nulos
+    elementos = df[coluna].dropna()
+
+    # Contar a frequência de cada elemento (tratando frases como unidades únicas)
+    frequencia = elementos.value_counts().to_dict()
+
+    # Definir stopwords (palavras a serem excluídas)
+    stopwords = set(STOPWORDS)
+    
+    # Opções interativas na barra lateral
+    st.sidebar.header("Configurações da Nuvem de Palavras")
+    background_color = st.sidebar.selectbox(
+        "Selecione a cor de fundo",
+        options=["white", "black", "blue", "green", "red", "grey", "yellow"],
+        index=0
+    )
+
+    max_words = st.sidebar.slider(
+        "Número máximo de palavras",
+        min_value=50,
+        max_value=500,
+        value=200,
+        step=50
+    )
+
+    colormap = st.sidebar.selectbox(
+        "Selecione o colormap",
+        options=[
+            "viridis", "plasma", "inferno", "magma", "cividis",
+            "Blues", "BuGn", "BuPu", "GnBu", "Greens", "Greys",
+            "Oranges", "OrRd", "PuBu", "PuBuGn", "PuRd", "Purples",
+            "RdPu", "Reds", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"
+        ],
+        index=0
+    )
+
+    # Gerar a nuvem de palavras
+    wordcloud = WordCloud(
+        background_color=background_color,
+        stopwords=stopwords,
+        max_words=max_words,
+        colormap=colormap,
+        width=800,
+        height=400,
+        collocations=False,  # Impede que combinações de palavras sejam divididas
+        random_state=42
+    ).generate_from_frequencies(frequencia)
+
+    # Exibir a nuvem de palavras usando matplotlib
+    fig, ax = plt.subplots(figsize=(15, 10))
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+    plt.tight_layout(pad=0)
+
+    st.subheader("Nuvem de Palavras")
+    st.pyplot(fig)
+    
+    
 def run():
     """
     Função principal que executa a aplicação Streamlit.
     """
-    mkd_text("Prefeitura Municipal de Pojuca - BA", level='title', position='center')
+    mkd_text("Prefeituras e Câmaras/BA", level='title', position='center')
     mkd_text("", level='h7', position='center')
 
     if 'dados_carregados' not in st.session_state:
@@ -384,8 +486,11 @@ def run():
         df_to_show = rename_columns(df_to_show)
         columns_to_remove = ['Unidade', 'Município', 'Mês', 'Número do Mês', 'Código Órgão', 'Código da Unidade']
         df_to_show = remove_columns(df_to_show, columns_to_remove)
-        AgGrid(df_to_show)
+        AgGrid(df_to_show, height=300, width='100%')
+        gerar_botoes_download(df_to_show, 'dados.csv', 'dados.json')
+        gerar_nuvem_de_palavras(df_to_show, 'Descrição Elemento Gestor')
 
-if __name__ == "__main__":
-    st.session_state.clear()
-    run()
+    if __name__ == "__main__":
+        st.session_state.clear()
+        run()
+        

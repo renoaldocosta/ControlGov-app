@@ -86,7 +86,7 @@ def main():
     elif selected_page == "CM Pinhão/SE":
         show_banner()
         load_page("CM_Pinhao_SE")
-    elif selected_page == "PM Pojuca/BA":
+    elif selected_page == "PMs & CMs/BA":
         show_banner()
         load_page("PM_Pojuca_BA")
     elif selected_page == "teste":
