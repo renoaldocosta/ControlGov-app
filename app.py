@@ -104,9 +104,6 @@ def main():
     elif selected_page == "PMs & CMs/BA":
         show_banner()
         load_page("PMs_e_CMs")
-    elif selected_page == "E-TCM/BA":
-        show_banner()
-        load_page("tcm")
 
 if __name__ == "__main__":
     main()
