@@ -87,7 +87,7 @@ def main():
     selected_page = sidebar()
 
     # Função de depuração (remova após confirmar)
-    list_pages_directory()
+    #list_pages_directory()
 
     # Carregamento dinâmico de conteúdo com base na opção selecionada
     if selected_page == "Introdução":

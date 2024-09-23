@@ -499,51 +499,7 @@ def run():
         df_to_show = remove_columns(df_to_show, columns_to_remove)
         AgGrid(df_to_show)
         
-        
-        
-        '''tab1, tab2, tab3, tab4 = st.tabs(['Empenhos', 'Liquidação', 'Pagamento', 'Exploração de dados'])
-        with tab1:
-            df_empenho = st.session_state['df_empenho']
-            AgGrid(df_empenho)
-        with tab2:
-            df_liquidacao = st.session_state['df_liquidacao']
-            st.write(df_liquidacao.head())
-        with tab3:
-            df_pagamento = st.session_state['df_pagamento']
-            st.write(df_pagamento.head())
-        with tab4:
-            option = st.selectbox("Selecione o tipo de dados", ['Empenhos', 'Liquidação', 'Pagamento'])
-            if option == 'Empenhos':
-                pygwalker(df_empenho)
-            elif option == 'Liquidação':
-                pygwalker(df_liquidacao)
-            else:
-                pygwalker(df_pagamento)'''
-        
-        #itables(df)
-        
-                
-                
-                
-    '''else:
     
-    df_empenhos = get_empenhos(db, collection)
-    st.session_state['df_empenhos'] = df_empenhos
-    
-    tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
-    
-    df = filters()
-    
-    with tab1:
-        st.write(df.head())
-    with tab2:
-        pygwalker(df_empenhos)
-
-    with st.expander("Amostra dos dados: Empenhos"):
-        st.dataframe(df.head().reset_index(drop=True))
-    
-
-    metrics(df)'''
     
 if __name__ == "__main__":
     st.session_state.clear()
