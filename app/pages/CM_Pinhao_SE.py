@@ -430,6 +430,76 @@ def display_aggrid_with_links(
         allow_unsafe_jscode=True  # Necessário para permitir o uso de JsCode
     )
 
+
+def display_dataframe_with_links(
+    df: pd.DataFrame,
+    link_columns: list,
+    link_text: dict = None,
+    right_align_columns: list = None,
+    height: int = 300,
+    theme: str = 'default',
+    use_data_editor: bool = False
+):
+    """
+    Exibe um DataFrame no Streamlit com colunas específicas renderizadas como links clicáveis e com alinhamento personalizado.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame a ser exibido.
+    - link_columns (list): Lista de nomes de colunas que contêm URLs.
+    - link_text (dict, opcional): Dicionário onde as chaves são os nomes das colunas de links
+                                   e os valores são os textos dos links. Se não fornecido,
+                                   o texto padrão será o URL completo.
+    - right_align_columns (list, opcional): Lista de nomes de colunas que devem ser alinhadas à direita.
+    - height (int, opcional): Altura da tabela no Streamlit. Padrão é 300.
+    - theme (str, opcional): Tema do componente (para data_editor). Padrão é 'default'.
+    - use_data_editor (bool, opcional): Se True, usa st.data_editor; caso contrário, usa st.dataframe. Padrão é False.
+    """
+    # Define as configurações de coluna
+    column_config = {}
+
+    # Configura as colunas de links
+    for col in link_columns:
+        column_config[col] = st.column_config.LinkColumn(
+            label=col.replace('_', ' ').title(),
+            display_text=link_text.get(col, None) if link_text else None,
+            width="large",  # Ajuste conforme necessário: "small", "medium", "large"
+            help=f"Link para {col.replace('_', ' ').lower()}",
+            validate=r"^https?://.+$"  # Validação opcional para URLs válidas
+        )
+    
+    # Configura o alinhamento das colunas à direita
+    if right_align_columns:
+        for col in right_align_columns:
+            # Utiliza NumberColumn para alinhamento à direita
+            column_config[col] = st.column_config.NumberColumn(
+                label=col.replace('_', ' ').title(),
+                format="%.2f",  # Formatação opcional para números
+                width="small",  # Ajuste conforme necessário
+                help=f"Valores para {col.replace('_', ' ').lower()}"
+            )
+    
+    
+    
+    # Exibe o DataFrame usando st.dataframe ou st.data_editor
+    if use_data_editor:
+        st.data_editor(
+            df,
+            column_config=column_config,
+            hide_index=True,
+            height=height,
+            use_container_width=True  # Ajusta a largura conforme o container
+        )
+    else:
+        
+        st.dataframe(
+            df,
+            column_config=column_config,
+            hide_index=True,
+            height=height,
+            use_container_width=True  # Ajusta a largura conforme o container
+        )
+            
+    
 def reorder_columns(df: pd.DataFrame, new_order: list) -> pd.DataFrame:
     """
     Reordena as colunas de um DataFrame com base em uma nova ordem fornecida.
@@ -448,6 +518,8 @@ def reorder_columns(df: pd.DataFrame, new_order: list) -> pd.DataFrame:
     
     # Reordena o DataFrame com base na nova ordem de colunas
     return df.reindex(columns=new_order)
+
+
 
 def format_data_columns(df, columns):
     for col in columns:
@@ -502,7 +574,7 @@ def run():
         # Aplica a função para formatar as colunas de moeda
         df_to_show = apply_currency_format(df_to_show, currency_columns)
 
-
+        #st.dataframe(df_to_show, height=300, hide_index=True)
         # Grid
         # Define quais colunas são links
         link_cols = ["link_Detalhes"]
@@ -515,6 +587,18 @@ def run():
         # Define as colunas que devem ser alinhadas à direita
         right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
 
+        # Chama a função para exibir o DataFrame
+        display_dataframe_with_links(
+            df=df_to_show,
+            link_columns=link_cols,
+            link_text=link_texts,
+            right_align_columns=right_align_cols,
+            height=300,
+            theme='default', # Altere para 'balham' se desejar or 
+            use_data_editor=False  # Altere para True se desejar usar data_editor
+        )
+        
+        
         # Chama a função para exibir o AgGrid com links e alinhamento personalizado
         display_aggrid_with_links(
             df=df_to_show,
@@ -526,6 +610,27 @@ def run():
             update_mode=GridUpdateMode.NO_UPDATE
         )
     with tab2:
+        # Define quais colunas são links
+        link_cols = ["link_Detalhes"]
+
+        # Define textos personalizados para os links
+        link_texts = {
+            "link_Detalhes": "Ver Detalhes",
+        }
+
+        # Define as colunas que devem ser alinhadas à direita
+        right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
+
+        # Chama a função para exibir o DataFrame
+        display_dataframe_with_links(
+            df=df_to_show,
+            link_columns=link_cols,
+            link_text=link_texts,
+            right_align_columns=right_align_cols,
+            height=300,
+            theme='default',
+            use_data_editor=False  # Altere para True se desejar usar data_editor
+        )
         pass
         #pygwalker(df_empenhos)
 
