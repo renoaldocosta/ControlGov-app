@@ -401,7 +401,7 @@ if __name__ == '__main__':
     df_completo = retornar_df_completo(df_geral)
 
     # Inserir no MongoDB, evitando duplicação com base nos campos 'Número', 'Data', 'Atualizado'
-    chave_composta = ['Número', 'Data', 'Atualizado']
+    chave_composta = ['Número', 'Data', 'Atualizado','Empenhado','Liquidado','Pago']
     inserir_df_no_mongodb_sem_duplicados(df_completo, mongodb_collection, chave_composta)
     
     
