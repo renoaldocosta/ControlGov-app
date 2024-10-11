@@ -92,7 +92,7 @@ def format_df(df_empenhos: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=600)
 def get_empenhos(db_name: str, collection_name: str) -> pd.DataFrame:
     """
     Retrieve 'empenhos' data from MongoDB and return it as a DataFrame.
