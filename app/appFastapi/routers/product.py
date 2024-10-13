@@ -2,16 +2,16 @@
 
 from fastapi import APIRouter, HTTPException
 from typing import List
-from Teste.database import product_collection, product_helper
-from Teste.models import Product, UpdateProduct
+from app.appFastapi.database import product_collection, product_helper
+from app.appFastapi.models import Product, UpdateProduct
 from bson import ObjectId
 
 router = APIRouter()
 
 @router.post("/", response_description="Adicionar um novo produto", response_model=dict)
 async def create_product(product: Product):
-    product = await product_collection.insert_one(product.dict())
-    new_product = await product_collection.find_one({"_id": product.inserted_id})
+    insert_result = await product_collection.insert_one(product.dict())
+    new_product = await product_collection.find_one({"_id": insert_result.inserted_id})
     return product_helper(new_product)
 
 @router.get("/", response_description="Lista de produtos", response_model=List[dict])

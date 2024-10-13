@@ -1,7 +1,7 @@
 # C:\SCRIPTS_INFNET\RD5_Projeto\Livro\Teste\main.py
 
 from fastapi import FastAPI
-from Teste.routers import product
+from app.appFastapi.routers import product
 
 
 app = FastAPI()

@@ -8,7 +8,7 @@ from bson import ObjectId
 # Conexão com o MongoDB Atlas
 MONGO_DETAILS = os.getenv("MONGO_DETAILS", "mongodb+srv://renoaldo_teste:zfUsBhhQFvz5hnEV@cluster0.zmdkz1p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
-client = AsyncIOMotorClient(MONGO_DETAILS)
+client: AsyncIOMotorClient = AsyncIOMotorClient(MONGO_DETAILS)
 
 database = client.livro  # Nome do banco de dados
 
