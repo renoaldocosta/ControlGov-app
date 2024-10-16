@@ -18,5 +18,4 @@ pygwalker
 fastapi
 uvicorn
 motor
-bson
 plotly
