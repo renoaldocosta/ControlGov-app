@@ -165,7 +165,7 @@ def extrai_itens_para_colunas(itens):
             return None, None
     return None, None
 
-#@st.cache_data
+@st.cache_data
 def get_empenhos_API()-> pd.DataFrame:
     st.session_state.clear()
     with st.spinner("Loading data..."):
@@ -195,12 +195,15 @@ def get_empenhos_API()-> pd.DataFrame:
             df_empenhos = split_credor_column(df_empenhos)
             
             st.session_state['df_empenhos'] = df_empenhos
+            
+            # renomear colunas 
+            #df_empenhos.rename(columns={'Elemento_de_Despesa': 'Elemento de Despesa','Categorias_de_base_legal':'Categorias de base legal'}, inplace=True)
             return df_empenhos
         else:
             return st.session_state['df_empenhos']
 
 
-#@st.cache_data
+@st.cache_data
 def get_empenhos(db_name: str, collection_name: str) -> pd.DataFrame:
     """
     Retrieve 'empenhos' data from MongoDB and return it as a DataFrame.
@@ -400,16 +403,15 @@ def elemento_despesa_filter(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered DataFrame.
     """
-    elementos = df['Elemento de Despesa'].unique().tolist()
-
-    selected_elementos = st.multiselect(
+    elementos = df['Elemento_de_Despesa'].unique().tolist()
+    selected_elementos: list[str] = st.multiselect(
         "Elemento de Despesa",
         elementos,
         placeholder="Selecione um ou mais elementos de despesa"
     )
 
     if selected_elementos:
-        df = df[df['Elemento de Despesa'].isin(selected_elementos)]
+        df = df[df['Elemento_de_Despesa'].isin(selected_elementos)]
 
     st.session_state['elemento_despesa'] = df
 
@@ -452,7 +454,7 @@ def categorias_de_base_legal_filter(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered DataFrame.
     """
-    base_legal_list = sorted(df['Categorias de base legal'].unique().tolist())
+    base_legal_list = sorted(df['Categorias_de_base_legal'].unique().tolist())
 
     selected_base_legal = st.multiselect(
         "Base Legal",
@@ -461,7 +463,7 @@ def categorias_de_base_legal_filter(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     if selected_base_legal:
-        df = df[df['Categorias de base legal'].isin(selected_base_legal)]
+        df = df[df['Categorias_de_base_legal'].isin(selected_base_legal)]
 
     st.session_state['base_legal'] = df
 
