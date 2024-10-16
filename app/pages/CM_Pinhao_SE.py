@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from st_aggrid.shared import JsCode
+from typing import Dict, Optional
 
 from app.services.text_functions import mkd_text, mkd_text_divider
 
@@ -514,12 +515,11 @@ def remove_columns(df: pd.DataFrame, columns: list) -> pd.DataFrame:
     """
     return df.drop(columns=columns, errors='ignore')
 
-
 def display_aggrid_with_links(
     df: pd.DataFrame,
     link_columns: list,
-    link_text: dict = None,
-    right_align_columns: list = None,
+    link_text: Optional[Dict[str, str]] = None,
+    right_align_columns: list = [],
     height: int = 300,
     theme: str = 'balham',
     update_mode: GridUpdateMode = GridUpdateMode.NO_UPDATE
@@ -709,38 +709,64 @@ def run():
         'Unid. Administradora', 'Unid. Orçamentária', 'Fonte de recurso'
     ]
     df_to_show = remove_columns(df_to_show, columns_to_remove)
-    st.write(df_to_show)
-    new_column_order = [
-        "Número", "Data","Data_datetime", "Subelemento", "Credor", "Alteração","Alteração_float", "Empenhado",
-        "Empenhado_float", "Liquidado",  "Liquidado_float", "Pago","Pago_float", "Atualizado", "link_Detalhes", "Elemento_de_Despesa",
-        "Projeto_Atividade", "Categorias_de_base_legal", "Histórico", 
+    # st.write(df_to_show)
+    # new_column_order = [
+    #     "Número", "Data","Data_datetime", "Subelemento", "Credor", "Alteração","Alteração_float", "Empenhado",
+    #     "Empenhado_float", "Liquidado",  "Liquidado_float", "Pago","Pago_float", "Atualizado", "link_Detalhes", "Elemento_de_Despesa",
+    #     "Projeto_Atividade", "Categorias_de_base_legal", "Histórico", 
         
+    # ]
+    new_column_order = [
+        "Número", "Data", "Subelemento", "Credor", "Alteração", "Empenhado",
+        "Liquidado", "Pago", "Atualizado", "link_Detalhes", "Elemento_de_Despesa",
+        "Projeto_Atividade", "Categorias_de_base_legal", "Histórico"
     ]
-    st.write('1')
+
+    colunas_renomeadas = {
+        "Número": "Número do Empenho",
+        "Data": "Data do Empenho",
+        "Subelemento": "Subelemento de Despesa",
+        "Credor": "Credor",
+        "Alteração": "Alteração no Valor",
+        "Empenhado": "Valor Empenhado",
+        "Liquidado": "Valor Liquidado",
+        "Pago": "Valor Pago",
+        "Atualizado": "Última Atualização",
+        "link_Detalhes": "Link para Detalhes",
+        "Elemento_de_Despesa": "Elemento de Despesa",
+        "Projeto_Atividade": "Projeto / Atividade",
+        "Categorias_de_base_legal": "Categoria Legal",
+        "Histórico": "Descrição do Histórico"
+    }
+
+    # Reordenar as colunas
     df_to_show = reorder_columns(df_to_show, new_column_order)
-    st.write('2')
+
+    # Renomear as colunas para títulos mais amigáveis
+    df_to_show = df_to_show.rename(columns=colunas_renomeadas)
+
+
     # date_columns = ['Data', 'Atualizado']
     # df_to_show = format_data_columns(df_to_show, date_columns)
-    st.write('3')
+
     # currency_columns = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
     # df_to_show = apply_currency_format(df_to_show, currency_columns)
-    st.write('4')
+
     link_cols = ["link_Detalhes"]
     link_texts = {"link_Detalhes": "Ver Detalhes"}
     right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
 
     with tab1:
-        display_dataframe_with_links(
-            df=df_to_show,
-            link_columns=link_cols,
-            link_text=link_texts,
-            right_align_columns=right_align_cols,
-            height=300,
-            theme='default',
-            use_data_editor=False
-        )
-
-    with tab2:
+        # display_dataframe_with_links(
+        #     df=df_to_show,
+        #     link_columns=link_cols,
+        #     link_text=link_texts,
+        #     right_align_columns=right_align_cols,
+        #     height=300,
+        #     theme='default',
+        #     use_data_editor=False
+        # )
+        # st.dataframe(df_to_show)
         display_aggrid_with_links(
             df=df_to_show,
             link_columns=link_cols,
@@ -748,8 +774,19 @@ def run():
             right_align_columns=right_align_cols,
             height=300,
             theme='balham',
-            update_mode=GridUpdateMode.NO_UPDATE
+            # update_mode=GridUpdateMode.NO_UPDATE
         )
+    with tab2:
+        pass
+        # display_aggrid_with_links(
+        #     df=df_to_show,
+        #     link_columns=link_cols,
+        #     link_text=link_texts,
+        #     right_align_columns=right_align_cols,
+        #     height=300,
+        #     theme='balham',
+        #     # update_mode=GridUpdateMode.NO_UPDATE
+        # )
 
 
 if __name__ == "__main__":
