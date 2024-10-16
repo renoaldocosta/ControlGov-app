@@ -1,6 +1,7 @@
 import os
 import time
-
+import requests
+import json
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
@@ -92,7 +93,114 @@ def format_df(df_empenhos: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@st.cache_data
+def converte_real_float(df, list_columns):
+    for column in list_columns:
+        new_column = column + '_float'
+        df[new_column] = (
+            df[column]
+            .str.replace('R\$', '', regex=True)  # Remove currency symbol
+            .str.replace('.', '', regex=False)   # Remove thousands separator
+            .str.replace(',', '.', regex=False)  # Replace decimal commas with dots
+            .astype(float)  # Convert to float
+        )
+    return df  # Fixed return statement
+
+
+def converte_data_datetime(df, list_columns):
+    for column in list_columns:
+        new_column = column + '_datetime'
+        df[new_column] = pd.to_datetime(df[column], errors='coerce')
+    return df
+
+def processa_itens_column(value):
+    if isinstance(value, list):
+        # Se for uma lista aninhada, converte cada item interno para string e faz join
+        return ', '.join(
+            ', '.join(map(str, item)) if isinstance(item, list) else str(item)
+            for item in value
+        )
+    return str(value)  # Caso não seja uma lista, apenas converte para string
+
+def controlgov_api_request(url: str) -> pd.DataFrame:
+    """
+    Make a request to the ControlGov API and return the data as a DataFrame.
+
+    Args:
+        url (str): The URL of the API endpoint.
+
+    Returns:
+        pd.DataFrame: The data from the API as a DataFrame.
+    """
+    with st.spinner("Loading data..."):
+        try:
+            response = requests.get(url, timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                df = pd.DataFrame(data['empenhos'])
+            else:
+                st.error(f"Erro ao acessar a API: {response.status_code}")
+        except Exception as e:
+            st.error(f"Erro ao acessar a API: {e}")
+            return pd.DataFrame()
+    return df
+
+
+def split_credor_column(df: pd.DataFrame) -> pd.DataFrame:
+    if 'Credor' in df.columns:
+        df['Credor'] = df['Credor'].str.split(' - ').apply(
+            lambda x: f'{x[1]} - {x[0]}' if len(x) > 1 else x[0]
+        )
+    return df
+
+def extrai_itens_para_colunas(itens):
+    """Extrai a descrição e o valor total dos itens."""
+    if isinstance(itens, list) and len(itens) > 1:
+        try:
+            valores = itens[1][0]  # Acessa a lista interna com os valores
+            descricao = valores[0]  # Descrição do item
+            valor_total = valores[-1]  # Valor total do item
+            return descricao, valor_total
+        except IndexError:
+            # Caso a estrutura dos dados não esteja correta
+            return None, None
+    return None, None
+
+#@st.cache_data
+def get_empenhos_API()-> pd.DataFrame:
+    st.session_state.clear()
+    with st.spinner("Loading data..."):
+        if 'df_empenhos' not in st.session_state:
+            url = 'https://api.controlgov.org/empenhos/'
+            df_empenhos = controlgov_api_request(url)
+            df_empenhos = df_empenhos.astype(str)
+            # Remove the 'id' column
+            df_empenhos = df_empenhos.drop(['id'], axis=1)
+            # Convert date columns to datetime
+            colunas_data = ['Data', 'Atualizado']
+            df_empenhos = converte_data_datetime(df_empenhos, colunas_data)
+            st.write("")
+            # Convert multiple currency columns to float
+            colunas_valores = ['Alteração', 'Empenhado', 'Liquidado', 'Pago']
+            df_empenhos = converte_real_float(df_empenhos, colunas_valores)
+            
+            
+            
+            # Extrair descrição e valor dos itens
+            if 'Item(ns)' in df_empenhos.columns:
+                df_empenhos[['Item_Descricao', 'Item_Valor']] = df_empenhos['Item(ns)'].apply(
+                    lambda x: pd.Series(extrai_itens_para_colunas(x))
+                )
+                df_empenhos = df_empenhos.drop(columns=['Item(ns)'])  # Remove coluna antiga
+
+            df_empenhos = split_credor_column(df_empenhos)
+            
+            st.session_state['df_empenhos'] = df_empenhos
+            return df_empenhos
+        else:
+            return st.session_state['df_empenhos']
+
+
+#@st.cache_data
 def get_empenhos(db_name: str, collection_name: str) -> pd.DataFrame:
     """
     Retrieve 'empenhos' data from MongoDB and return it as a DataFrame.
@@ -580,9 +688,11 @@ def run():
     """
     mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
 
-    db_name, collection_name = 'CMP', 'EMPENHOS_DETALHADOS_STAGE'
-    df_empenhos = get_empenhos(db_name, collection_name)
-    st.session_state['df_empenhos'] = df_empenhos
+    # db_name, collection_name = 'CMP', 'EMPENHOS_DETALHADOS_STAGE'
+    # df_empenhos = get_empenhos(db_name, collection_name)
+    
+    df_empenhos = get_empenhos_API()
+    st.dataframe(df_empenhos)
 
     df_filtered = filters(df_empenhos)
     metrics(df_filtered)
