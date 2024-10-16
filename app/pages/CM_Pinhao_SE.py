@@ -243,17 +243,18 @@ def metrics(df: pd.DataFrame):
         mkd_text_divider(f"Métricas de {df_escolhido}", level='subheader', position='center')
     else:
         mkd_text_divider("Métricas de Empenho", level='subheader', position='center')
-
+    
     if df['Data'].dtype != 'datetime64[ns]':
         df['Data'] = pd.to_datetime(df['Data'])
-
+    
     total_registros = df.shape[0]
-    data_mais_recente = df['Data'].max().strftime('%d/%m/%Y')
-    data_mais_antiga = df['Data'].min().strftime('%d/%m/%Y')
-    valor_minimo = df['Empenhado'].min()
-    valor_medio = df['Empenhado'].mean()
-    valor_maximo = df['Empenhado'].max()
+    data_mais_recente = df['Data_datetime'].max().strftime('%d/%m/%Y')
+    data_mais_antiga = df['Data_datetime'].min().strftime('%d/%m/%Y')
 
+    valor_minimo = df['Empenhado_float'].min()
+    valor_medio = df['Empenhado_float'].mean()
+    valor_maximo = df['Empenhado_float'].max()
+    
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total de Registros", total_registros)
