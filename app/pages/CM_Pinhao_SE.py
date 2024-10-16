@@ -495,6 +495,7 @@ def filters(df: pd.DataFrame) -> pd.DataFrame:
                 df = elemento_despesa_filter(df)
                 df = sub_elemento_despesa_filter(df)
                 df = categorias_de_base_legal_filter(df)
+                df = df.sort_values(by='Data_datetime', ascending=False)
 
                 return df
         except Exception as e:
@@ -687,47 +688,65 @@ def format_data_columns(df: pd.DataFrame, columns: list) -> pd.DataFrame:
 
 def run():
     """
-    Main function to run the Streamlit app.
+    Função principal para executar o aplicativo Streamlit.
     """
+    # Exibir o título
     mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
 
-    # db_name, collection_name = 'CMP', 'EMPENHOS_DETALHADOS_STAGE'
-    # df_empenhos = get_empenhos(db_name, collection_name)
-    
+    # Obter dados
     df_empenhos = get_empenhos_API()
     st.dataframe(df_empenhos)
 
+    # Filtrar dados
     df_filtered = filters(df_empenhos)
+
+    # Exibir métricas
     metrics(df_filtered)
+
+    # Divisor de texto
     mkd_text_divider("Registros", level='subheader', position='center')
 
+    # Criar abas
     tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
 
-    df_to_show = df_filtered.copy().sort_values(by='Data', ascending=False)
+    # Preparar o DataFrame para exibição
+    df_to_show = prepare_dataframe(df_filtered)
+
+    # Exibir dados na primeira aba
+    with tab1:
+        display_data(df_to_show)
+
+    # Segunda aba (Exploração)
+    with tab2:
+        pass  # Código para a aba 'Exploração' vai aqui
+
+def prepare_dataframe(df):
+    """
+    Prepara o DataFrame para exibição, removendo colunas desnecessárias,
+    reordenando e renomeando colunas.
+    """
+    # Remover colunas indesejadas
     columns_to_remove = [
         'Poder', 'Função', "Subfunção", "Item(ns)", 'Mês', 'Mês_Numero',
         'Unid. Administradora', 'Unid. Orçamentária', 'Fonte de recurso'
     ]
-    df_to_show = remove_columns(df_to_show, columns_to_remove)
-    # st.write(df_to_show)
-    # new_column_order = [
-    #     "Número", "Data","Data_datetime", "Subelemento", "Credor", "Alteração","Alteração_float", "Empenhado",
-    #     "Empenhado_float", "Liquidado",  "Liquidado_float", "Pago","Pago_float", "Atualizado", "link_Detalhes", "Elemento_de_Despesa",
-    #     "Projeto_Atividade", "Categorias_de_base_legal", "Histórico", 
-        
-    # ]
+    df = remove_columns(df, columns_to_remove)
+
+    # Reordenar colunas
     new_column_order = [
         "Número", "Data", "Subelemento", "Credor", "Alteração", "Empenhado",
         "Liquidado", "Pago", "Atualizado", "link_Detalhes", "Elemento_de_Despesa",
         "Projeto_Atividade", "Categorias_de_base_legal", "Histórico"
     ]
+    df = reorder_columns(df, new_column_order)
 
+    # Renomear colunas
     colunas_renomeadas = {
         "Número": "Número do Empenho",
         "Data": "Data do Empenho",
         "Subelemento": "Subelemento de Despesa",
         "Credor": "Credor",
-        "Alteração": "Alteração no Valor",
+        "Alteração": "Alteração no Empenho",
         "Empenhado": "Valor Empenhado",
         "Liquidado": "Valor Liquidado",
         "Pago": "Valor Pago",
@@ -738,55 +757,29 @@ def run():
         "Categorias_de_base_legal": "Categoria Legal",
         "Histórico": "Descrição do Histórico"
     }
+    df = df.rename(columns=colunas_renomeadas)
 
-    # Reordenar as colunas
-    df_to_show = reorder_columns(df_to_show, new_column_order)
+    return df
 
-    # Renomear as colunas para títulos mais amigáveis
-    df_to_show = df_to_show.rename(columns=colunas_renomeadas)
+def display_data(df):
+    """
+    Exibe o DataFrame com formatação apropriada no aplicativo Streamlit.
+    """
+    # Definir colunas para links e alinhamento
+    link_cols = ["Link para Detalhes"]
+    link_texts = {"Link para Detalhes": "Ver Detalhes"}
+    right_align_cols = ['Valor Empenhado', 'Valor Liquidado', 'Valor Pago', 'Alteração no Empenho']
 
+    # Exibir DataFrame com links e formatação
+    display_aggrid_with_links(
+        df=df,
+        link_columns=link_cols,
+        link_text=link_texts,
+        right_align_columns=right_align_cols,
+        height=300,
+        theme='balham',
+    )
 
-    # date_columns = ['Data', 'Atualizado']
-    # df_to_show = format_data_columns(df_to_show, date_columns)
-
-    # currency_columns = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
-    # df_to_show = apply_currency_format(df_to_show, currency_columns)
-
-    link_cols = ["link_Detalhes"]
-    link_texts = {"link_Detalhes": "Ver Detalhes"}
-    right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
-
-    with tab1:
-        # display_dataframe_with_links(
-        #     df=df_to_show,
-        #     link_columns=link_cols,
-        #     link_text=link_texts,
-        #     right_align_columns=right_align_cols,
-        #     height=300,
-        #     theme='default',
-        #     use_data_editor=False
-        # )
-        # st.dataframe(df_to_show)
-        display_aggrid_with_links(
-            df=df_to_show,
-            link_columns=link_cols,
-            link_text=link_texts,
-            right_align_columns=right_align_cols,
-            height=300,
-            theme='balham',
-            # update_mode=GridUpdateMode.NO_UPDATE
-        )
-    with tab2:
-        pass
-        # display_aggrid_with_links(
-        #     df=df_to_show,
-        #     link_columns=link_cols,
-        #     link_text=link_texts,
-        #     right_align_columns=right_align_cols,
-        #     height=300,
-        #     theme='balham',
-        #     # update_mode=GridUpdateMode.NO_UPDATE
-        # )
 
 
 if __name__ == "__main__":
