@@ -244,8 +244,8 @@ def metrics(df: pd.DataFrame):
     else:
         mkd_text_divider("Métricas de Empenho", level='subheader', position='center')
     
-    if df['Data'].dtype != 'datetime64[ns]':
-        df['Data'] = pd.to_datetime(df['Data'])
+    # if df['Data_datetime'].dtype != 'datetime64[ns]':
+    #     df['Data_datetime'] = pd.to_datetime(df['Data'])
     
     total_registros = df.shape[0]
     data_mais_recente = df['Data_datetime'].max().strftime('%d/%m/%Y')
@@ -325,10 +325,10 @@ def year_filter(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered DataFrame.
     """
-    df['Data'] = pd.to_datetime(df['Data'], errors='coerce')
+    # df['Data'] = pd.to_datetime(df['Data'], errors='coerce')
 
-    first_year = df['Data'].dt.year.min()
-    last_year = df['Data'].dt.year.max()
+    first_year = df['Data_datetime'].dt.year.min()
+    last_year = df['Data_datetime'].dt.year.max()
 
     selected_years = st.slider(
         "Ano",
@@ -337,7 +337,7 @@ def year_filter(df: pd.DataFrame) -> pd.DataFrame:
         value=(int(first_year), int(last_year))
     )
 
-    df_filtered = df[df['Data'].dt.year.between(*selected_years)]
+    df_filtered = df[df['Data_datetime'].dt.year.between(*selected_years)]
     st.session_state['selected_years'] = selected_years
 
     return df_filtered
@@ -353,7 +353,7 @@ def month_filter(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered DataFrame.
     """
-    df['Mês_Numero'] = df['Data'].dt.month
+    df['Mês_Numero'] = df['Data_datetime'].dt.month
     df['Mês'] = df['Mês_Numero'].map(MONTH_TRANSLATION)
     all_months = list(MONTH_TRANSLATION.values())
 
@@ -709,20 +709,22 @@ def run():
         'Unid. Administradora', 'Unid. Orçamentária', 'Fonte de recurso'
     ]
     df_to_show = remove_columns(df_to_show, columns_to_remove)
-
+    st.write(df_to_show)
     new_column_order = [
-        "Número", "Data", "Subelemento", "Credor", "Alteração", "Empenhado",
-        "Liquidado", "Pago", "Atualizado", "link_Detalhes", "Elemento de Despesa",
-        "Projeto/Atividade", "Categorias de base legal", "Histórico"
+        "Número", "Data","Data_datetime", "Subelemento", "Credor", "Alteração","Alteração_float", "Empenhado",
+        "Empenhado_float", "Liquidado",  "Liquidado_float", "Pago","Pago_float", "Atualizado", "link_Detalhes", "Elemento_de_Despesa",
+        "Projeto_Atividade", "Categorias_de_base_legal", "Histórico", 
+        
     ]
+    st.write('1')
     df_to_show = reorder_columns(df_to_show, new_column_order)
-
-    date_columns = ['Data', 'Atualizado']
-    df_to_show = format_data_columns(df_to_show, date_columns)
-
-    currency_columns = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
-    df_to_show = apply_currency_format(df_to_show, currency_columns)
-
+    st.write('2')
+    # date_columns = ['Data', 'Atualizado']
+    # df_to_show = format_data_columns(df_to_show, date_columns)
+    st.write('3')
+    # currency_columns = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
+    # df_to_show = apply_currency_format(df_to_show, currency_columns)
+    st.write('4')
     link_cols = ["link_Detalhes"]
     link_texts = {"link_Detalhes": "Ver Detalhes"}
     right_align_cols = ['Empenhado', 'Liquidado', 'Pago', 'Alteração']
