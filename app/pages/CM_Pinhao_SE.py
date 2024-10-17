@@ -9,7 +9,7 @@ from pymongo import MongoClient
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from st_aggrid.shared import JsCode
 from typing import Dict, Optional
-
+import plotly.express as px
 from app.services.text_functions import mkd_text, mkd_text_divider
 
 # Dictionary to translate month numbers to Portuguese month names
@@ -496,7 +496,10 @@ def filters(df: pd.DataFrame) -> pd.DataFrame:
                 df = sub_elemento_despesa_filter(df)
                 df = categorias_de_base_legal_filter(df)
                 df = df.sort_values(by='Data_datetime', ascending=False)
-                choice_grid = st.radio("Exibição da Tabela", ['Estilo 1', 'Estilo 2'], index=0, horizontal=True)
+                if 'choice_grid' in st.session_state:
+                    choice_grid = st.session_state['choice_grid']
+                else:
+                    choice_grid = st.radio("Exibição da Tabela", ['Estilo 1', 'Estilo 2'], index=1, horizontal=True)
                 return df, choice_grid
         except Exception as e:
             st.error(f"Erro ao aplicar filtros: {e}")
@@ -758,7 +761,7 @@ def run():
 
     # Obter dados
     df_empenhos = get_empenhos_API()
-    st.dataframe(df_empenhos)
+    #st.dataframe(df_empenhos)
 
     # Filtrar dados
     df_filtered, choice_grid = filters(df_empenhos)
@@ -767,6 +770,7 @@ def run():
     metrics(df_filtered)
 
     # Divisor de texto
+    mkd_text("", level='subheader', position='center')
     mkd_text_divider("Registros", level='subheader', position='center')
 
     # Criar abas
@@ -786,7 +790,74 @@ def run():
     with tab2:
         pass  # Código para a aba 'Exploração' vai aqui
 
-
-
+    mkd_text_divider("Visualizações", level='subheader', position='center')
+    visualizacoes(df_filtered)
+    
+    
 if __name__ == "__main__":
     run()
+
+def visualizacoes(df: pd.DataFrame):
+    min_year = df['Data_datetime'].dt.year.min()
+    max_year = df['Data_datetime'].dt.year.max()
+    
+    # Mapeando os números dos meses para abreviações
+    month_names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    
+    chart_bar_empenho_mes(df, month_names,min_year, max_year)
+    chart_bar_empenho_ano(df, min_year, max_year)
+
+
+def chart_bar_empenho_ano(df, min_year, max_year):
+    total_empenhado_por_mes = df.groupby(df['Data_datetime'].dt.to_period('Y'))['Empenhado_float'].sum()
+
+    # Convert index to string (e.g., "2021-01")
+    total_empenhado_por_mes.index = total_empenhado_por_mes.index.strftime('%Y')
+    
+    fig = px.bar(
+        total_empenhado_por_mes,
+        x=total_empenhado_por_mes.index,
+        y='Empenhado_float',
+        labels={'x': 'Ano', 'Empenhado_float': 'Valor Empenhado'},
+        text='Empenhado_float'
+    )
+    
+    st.plotly_chart(fig)
+
+def chart_bar_empenho_mes(df, month_names, min_year, max_year):
+    # Ensure 'Data_datetime' column is in datetime format
+    df['Data_datetime'] = pd.to_datetime(df['Data_datetime'])
+
+    # Group by month and count the number of occurrences
+    monthly_counts = df['Data_datetime'].dt.month.value_counts().sort_index()
+
+    # Convert to a DataFrame for easy plotting
+    monthly_df = monthly_counts.reset_index()
+    monthly_df.columns = ['Month', 'Count']
+
+    
+    monthly_df['Month'] = monthly_df['Month'].apply(lambda x: month_names[x - 1])
+    mkd_text(f'Volume de Empenhos por Mês ({min_year}~{max_year})', level='h4', position='center')
+    # Criar o gráfico de barras com Plotly
+    fig = px.bar(
+        monthly_df, 
+        x='Month', 
+        y='Count', 
+        labels={'Month': 'Mês', 'Count': 'Quantidade'},
+        text='Count'  # Exibir os valores nas barras
+    )
+
+    # Ajustar layout para melhor legibilidade
+    fig.update_traces(
+        textposition='outside',  # Move o texto para fora da barra
+        cliponaxis=False  # Permite que o texto apareça mesmo em barras pequenas
+    )
+
+    # Adicionar margem no layout para acomodar os textos
+    fig.update_layout(
+        xaxis_tickangle=-45,  # Inclina os rótulos do eixo X
+        margin=dict(t=40, b=80)  # Ajusta as margens superior e inferior
+    )
+    
+    st.plotly_chart(fig)
