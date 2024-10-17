@@ -496,8 +496,8 @@ def filters(df: pd.DataFrame) -> pd.DataFrame:
                 df = sub_elemento_despesa_filter(df)
                 df = categorias_de_base_legal_filter(df)
                 df = df.sort_values(by='Data_datetime', ascending=False)
-
-                return df
+                choice_grid = st.radio("Exibição da Tabela", ['Estilo 1', 'Estilo 2'], index=0, horizontal=True)
+                return df, choice_grid
         except Exception as e:
             st.error(f"Erro ao aplicar filtros: {e}")
             return df
@@ -686,40 +686,6 @@ def format_data_columns(df: pd.DataFrame, columns: list) -> pd.DataFrame:
     return df
 
 
-def run():
-    """
-    Função principal para executar o aplicativo Streamlit.
-    """
-    # Exibir o título
-    mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
-
-    # Obter dados
-    df_empenhos = get_empenhos_API()
-    st.dataframe(df_empenhos)
-
-    # Filtrar dados
-    df_filtered = filters(df_empenhos)
-
-    # Exibir métricas
-    metrics(df_filtered)
-
-    # Divisor de texto
-    mkd_text_divider("Registros", level='subheader', position='center')
-
-    # Criar abas
-    tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
-
-    # Preparar o DataFrame para exibição
-    df_to_show = prepare_dataframe(df_filtered)
-
-    # Exibir dados na primeira aba
-    with tab1:
-        display_data(df_to_show)
-
-    # Segunda aba (Exploração)
-    with tab2:
-        pass  # Código para a aba 'Exploração' vai aqui
-
 def prepare_dataframe(df):
     """
     Prepara o DataFrame para exibição, removendo colunas desnecessárias,
@@ -758,6 +724,8 @@ def prepare_dataframe(df):
         "Histórico": "Descrição do Histórico"
     }
     df = df.rename(columns=colunas_renomeadas)
+    
+    df = df.reset_index(drop=True)
 
     return df
 
@@ -779,6 +747,44 @@ def display_data(df):
         height=300,
         theme='balham',
     )
+
+
+def run():
+    """
+    Função principal para executar o aplicativo Streamlit.
+    """
+    # Exibir o título
+    mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
+
+    # Obter dados
+    df_empenhos = get_empenhos_API()
+    st.dataframe(df_empenhos)
+
+    # Filtrar dados
+    df_filtered, choice_grid = filters(df_empenhos)
+
+    # Exibir métricas
+    metrics(df_filtered)
+
+    # Divisor de texto
+    mkd_text_divider("Registros", level='subheader', position='center')
+
+    # Criar abas
+    tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
+
+    # Preparar o DataFrame para exibição
+    df_to_show = prepare_dataframe(df_filtered)
+
+    # Exibir dados na primeira aba
+    with tab1:
+        if choice_grid == 'Estilo 2':
+                display_data(df_to_show)
+        else:
+            st.dataframe(df_to_show)
+
+    # Segunda aba (Exploração)
+    with tab2:
+        pass  # Código para a aba 'Exploração' vai aqui
 
 
 
