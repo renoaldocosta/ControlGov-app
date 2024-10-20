@@ -13,6 +13,20 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown(
+    """
+    <style>
+    :root {
+        --primaryColor: blue;
+        --backgroundColor: white;
+        --secondaryBackgroundColor: white;
+        --textColor: black;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Adiciona o caminho da pasta de páginas ao sys.path
 pages_dir = os.path.join(os.getcwd(), 'app', 'pages')
 sys.path.append(pages_dir)
