@@ -885,7 +885,7 @@ def visualizacoes(df: pd.DataFrame):
     # chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol='', agg_func='count')
 
 
-def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max_year: int, 
+def chart_bar_empenho_periodo(df_filtered: pd.DataFrame, periodo: str, min_year: int, max_year: int, 
                               currency_symbol: str = 'R$', month_names: list = None, 
                               agg_func: str = 'sum'):
     """
@@ -901,12 +901,13 @@ def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max
         agg_func (str, opcional): Tipo de agregação ('sum' ou 'count'). Padrão é 'sum'.
     """
     # Verifica se a coluna 'Data_datetime' está no formato datetime
-    if not pd.api.types.is_datetime64_any_dtype(df['Data_datetime']):
-        df['Data_datetime'] = pd.to_datetime(df['Data_datetime'])
+    if not pd.api.types.is_datetime64_any_dtype(df_filtered['Data_datetime']):
+        df_filtered['Data_datetime'] = pd.to_datetime(df_filtered['Data_datetime'])
 
     # Filtra os dados pelo intervalo de anos
-    df_filtered = df[(df['Data_datetime'].dt.year >= min_year) & (df['Data_datetime'].dt.year <= max_year)].copy()
-
+    # df_filtered = df[(df['Data_datetime'].dt.year >= min_year) & (df['Data_datetime'].dt.year <= max_year)].copy()
+    
+    
     # Define o período baseado no tipo especificado
     if periodo.lower() == 'mes (acumulado)':
         if month_names is None:
