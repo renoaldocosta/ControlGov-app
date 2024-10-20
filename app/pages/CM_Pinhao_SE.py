@@ -11,6 +11,7 @@ from st_aggrid.shared import JsCode
 from typing import Dict, Optional
 import plotly.express as px
 from app.services.text_functions import mkd_text, mkd_text_divider
+import plotly.io as pio
 
 # Dictionary to translate month numbers to Portuguese month names
 MONTH_TRANSLATION = {
@@ -166,7 +167,7 @@ def extrai_itens_para_colunas(itens):
             return None, None
     return None, None
 
-@st.cache_data
+@st.cache_data(ttl=600) # Cache data for 10 minutes
 def get_empenhos_API()-> pd.DataFrame:
     st.session_state.clear()
     with st.spinner("Loading data..."):
@@ -204,7 +205,7 @@ def get_empenhos_API()-> pd.DataFrame:
             return st.session_state['df_empenhos']
 
 
-@st.cache_data
+@st.cache_data(ttl=600) # Cache data for 10 minutes
 def get_empenhos(db_name: str, collection_name: str) -> pd.DataFrame:
     """
     Retrieve 'empenhos' data from MongoDB and return it as a DataFrame.
@@ -774,7 +775,7 @@ def run():
     mkd_text_divider("Registros", level='subheader', position='center')
 
     # Criar abas
-    tab1, tab2 = st.tabs(['Empenhos', 'Exploração'])
+    tab1, tab2, tab3 = st.tabs(['Empenhos', 'Liquidações', 'Pagamentos'])
 
     # Preparar o DataFrame para exibição
     df_to_show = prepare_dataframe(df_filtered)
@@ -785,13 +786,18 @@ def run():
                 display_data(df_to_show)
         else:
             st.dataframe(df_to_show)
+            
+        mkd_text_divider("Visualizações", level='subheader', position='center')
+        visualizacoes(df_filtered)
 
     # Segunda aba (Exploração)
     with tab2:
-        pass  # Código para a aba 'Exploração' vai aqui
+        st.write('Ainda não implementado.')
+    
+    with tab3:
+        st.write('Ainda não implementado.')
 
-    mkd_text_divider("Visualizações", level='subheader', position='center')
-    visualizacoes(df_filtered)
+    
     
     
 if __name__ == "__main__":
@@ -803,61 +809,226 @@ def visualizacoes(df: pd.DataFrame):
     
     # Mapeando os números dos meses para abreviações
     month_names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
-                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+                   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     
-    chart_bar_empenho_mes(df, month_names,min_year, max_year)
-    chart_bar_empenho_ano(df, min_year, max_year)
+        
+    col1 = st.columns([1,1, 1,1,1])
+    with col1[1]:
+        tipo_visualizacao = st.radio("Visualizar por:", ['Contagem', 'Valor'])
+    with col1[3]:
+        tipo_periodo = st.radio("Período:", ['Mês', 'Bimestre', 'Trimestre', 'Quadrimestre', 'Ano'])
 
-
-def chart_bar_empenho_ano(df, min_year, max_year):
-    total_empenhado_por_mes = df.groupby(df['Data_datetime'].dt.to_period('Y'))['Empenhado_float'].sum()
-
-    # Convert index to string (e.g., "2021-01")
-    total_empenhado_por_mes.index = total_empenhado_por_mes.index.strftime('%Y')
+    if tipo_visualizacao == 'Contagem':
+        agg_func = 'count'
+        currency_symbol = ''
+    else:
+        agg_func = 'sum'
+        currency_symbol = 'R$'
     
+    if tipo_periodo == 'Mês':
+        mkd_text("Valor Empenhado por Mês", level='subheader', position='center')
+        chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
+    elif tipo_periodo == 'Ano':
+        mkd_text("Valor Empenhado por Ano", level='subheader', position='center')
+        chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
+    elif tipo_periodo == 'Quadrimestre':
+        mkd_text("Valor Empenhado por Quadrimestre", level='subheader', position='center')
+        chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
+    elif tipo_periodo == 'Trimestre':
+        mkd_text("Valor Empenhado por Trimestre", level='subheader', position='center')
+        chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
+    elif tipo_periodo == 'Bimestre':
+        mkd_text("Valor Empenhado por Bimestre", level='subheader', position='center')
+        chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
+        
+    # # Plotagem por Mês - Valor Empenhado
+    # mkd_text("Valor Empenhado por Mês", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol='R$', month_names=month_names, agg_func='sum')
+    
+    # # Plotagem por Mês - Quantidade de Empenhos
+    # mkd_text("Quantidade de Empenhos por Mês", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol='', month_names=month_names, agg_func='count')
+    
+    # # Plotagem por Ano - Valor Empenhado
+    # mkd_text("Valor Empenhado por Ano", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol='R$', agg_func='sum')
+    
+    # # Plotagem por Ano - Quantidade de Empenhos (Opcional)
+    # mkd_text("Quantidade de Empenhos por Ano", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol='', agg_func='count')
+    
+    # # Plotagem por Quadrimestre - Valor Empenhado
+    # mkd_text("Valor Empenhado por Quadrimestre", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol='R$', agg_func='sum')
+    
+    # # Plotagem por Quadrimestre - Quantidade de Empenhos (Opcional)
+    # mkd_text("Quantidade de Empenhos por Quadrimestre", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol='', agg_func='count')
+    
+    # # Plotagem por Trimestre - Valor Empenhado
+    # mkd_text("Valor Empenhado por Trimestre", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol='R$', agg_func='sum')
+    
+    # # Plotagem por Trimestre - Quantidade de Empenhos (Opcional)
+    # mkd_text("Quantidade de Empenhos por Trimestre", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol='', agg_func='count')
+    
+    # # Plotagem por Bimestre - Valor Empenhado
+    # mkd_text("Valor Empenhado por Bimestre", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol='R$', agg_func='sum')
+    
+    # # Plotagem por Bimestre - Quantidade de Empenhos (Opcional)
+    # mkd_text("Quantidade de Empenhos por Bimestre", level='subheader', position='center')
+    # chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol='', agg_func='count')
+
+
+def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max_year: int, 
+                              currency_symbol: str = 'R$', month_names: list = None, 
+                              agg_func: str = 'sum'):
+    """
+    Cria um gráfico de barras mostrando o valor ou a contagem empenhada por período especificado, com rótulos formatados.
+
+    Args:
+        df (pd.DataFrame): DataFrame contendo os dados.
+        periodo (str): Tipo de período ('mes', 'ano', 'quadrimestre', 'trimestre', 'bimestre').
+        min_year (int): Ano mínimo para filtrar os dados.
+        max_year (int): Ano máximo para filtrar os dados.
+        currency_symbol (str, opcional): Símbolo da moeda para formatação. Padrão é 'R$'.
+        month_names (list, opcional): Lista com nomes abreviados dos meses (necessário para 'mes').
+        agg_func (str, opcional): Tipo de agregação ('sum' ou 'count'). Padrão é 'sum'.
+    """
+    # Verifica se a coluna 'Data_datetime' está no formato datetime
+    if not pd.api.types.is_datetime64_any_dtype(df['Data_datetime']):
+        df['Data_datetime'] = pd.to_datetime(df['Data_datetime'])
+
+    # Filtra os dados pelo intervalo de anos
+    df_filtered = df[(df['Data_datetime'].dt.year >= min_year) & (df['Data_datetime'].dt.year <= max_year)].copy()
+
+    # Define o período baseado no tipo especificado
+    if periodo.lower() == 'mes':
+        if month_names is None:
+            # Se não forem fornecidos nomes de meses, utiliza os nomes abreviados em português
+            month_names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                           'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+        df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.month.apply(lambda x: month_names[x - 1])
+        sort_order = month_names
+        label_x = 'Mês'
+        titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Mês ({min_year} ~ {max_year})'
+        y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
+    elif periodo.lower() == 'ano':
+        df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.year.astype(str)
+        sort_order = sorted(df_filtered['Periodo'].unique())
+        label_x = 'Ano'
+        titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Ano ({min_year} ~ {max_year})'
+        y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
+    elif periodo.lower() == 'quadrimestre':
+        df_filtered['Quadrimester'] = (df_filtered['Data_datetime'].dt.month - 1) // 4 + 1
+        df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.year.astype(str) + '-Q' + df_filtered['Quadrimester'].astype(str)
+        sort_order = sorted(df_filtered['Periodo'].unique())
+        label_x = 'Quadrimestre'
+        titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Quadrimestre ({min_year} ~ {max_year})'
+        y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
+    elif periodo.lower() == 'trimestre':
+        df_filtered['Trimester'] = (df_filtered['Data_datetime'].dt.month - 1) // 3 + 1
+        df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.year.astype(str) + '-T' + df_filtered['Trimester'].astype(str)
+        sort_order = sorted(df_filtered['Periodo'].unique())
+        label_x = 'Trimestre'
+        titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Trimestre ({min_year} ~ {max_year})'
+        y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
+    elif periodo.lower() == 'bimestre':
+        df_filtered['Bimester'] = (df_filtered['Data_datetime'].dt.month - 1) // 2 + 1
+        df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.year.astype(str) + '-B' + df_filtered['Bimester'].astype(str)
+        sort_order = sorted(df_filtered['Periodo'].unique())
+        label_x = 'Bimestre'
+        titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Bimestre ({min_year} ~ {max_year})'
+        y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
+    else:
+        st.error("Tipo de período inválido. Escolha entre 'mes', 'ano', 'quadrimestre', 'trimestre' ou 'bimestre'.")
+        return
+
+    # Agrupa por 'Periodo' e aplica a agregação especificada
+    if agg_func == 'sum':
+        total_empenhado = df_filtered.groupby('Periodo')['Empenhado_float'].sum().reset_index()
+        total_empenhado.rename(columns={'Empenhado_float': 'Valor_Empenhado'}, inplace=True)
+    elif agg_func == 'count':
+        total_empenhado = df_filtered.groupby('Periodo').size().reset_index(name='Quantidade')
+    else:
+        st.error("Tipo de agregação inválido. Use 'sum' ou 'count'.")
+        return
+
+    # Ordena os períodos cronologicamente
+    if periodo.lower() == 'mes':
+        # Ordena pelo índice dos nomes dos meses
+        total_empenhado['Ordenacao'] = total_empenhado['Periodo'].apply(lambda x: sort_order.index(x))
+    elif periodo.lower() in ['ano', 'quadrimestre', 'trimestre', 'bimestre']:
+        # Ordena alfanumericamente
+        total_empenhado['Ordenacao'] = total_empenhado['Periodo'].apply(lambda x: sort_order.index(x))
+    total_empenhado = total_empenhado.sort_values('Ordenacao')
+    total_empenhado = total_empenhado.drop(columns=['Ordenacao'])
+
+    # Aplica a formatação de moeda para os textos, se for soma
+    if agg_func == 'sum':
+        total_empenhado['Valor_Formatado'] = total_empenhado['Valor_Empenhado'].apply(
+            lambda x: format_currency(x, currency_symbol)
+        )
+    elif agg_func == 'count':
+        total_empenhado['Valor_Formatado'] = total_empenhado['Quantidade'].astype(str)
+
+    # Define os dados para plotagem
+    if agg_func == 'sum':
+        x_data = 'Periodo'
+        y_data = 'Valor_Empenhado'
+        text_data = 'Valor_Formatado'
+    elif agg_func == 'count':
+        x_data = 'Periodo'
+        y_data = 'Quantidade'
+        text_data = 'Valor_Formatado'
+
+    # Cria o gráfico de barras
     fig = px.bar(
-        total_empenhado_por_mes,
-        x=total_empenhado_por_mes.index,
-        y='Empenhado_float',
-        labels={'x': 'Ano', 'Empenhado_float': 'Valor Empenhado'},
-        text='Empenhado_float'
-    )
-    
-    st.plotly_chart(fig)
-
-def chart_bar_empenho_mes(df, month_names, min_year, max_year):
-    # Ensure 'Data_datetime' column is in datetime format
-    df['Data_datetime'] = pd.to_datetime(df['Data_datetime'])
-
-    # Group by month and count the number of occurrences
-    monthly_counts = df['Data_datetime'].dt.month.value_counts().sort_index()
-
-    # Convert to a DataFrame for easy plotting
-    monthly_df = monthly_counts.reset_index()
-    monthly_df.columns = ['Month', 'Count']
-
-    
-    monthly_df['Month'] = monthly_df['Month'].apply(lambda x: month_names[x - 1])
-    mkd_text(f'Volume de Empenhos por Mês ({min_year}~{max_year})', level='h4', position='center')
-    # Criar o gráfico de barras com Plotly
-    fig = px.bar(
-        monthly_df, 
-        x='Month', 
-        y='Count', 
-        labels={'Month': 'Mês', 'Count': 'Quantidade'},
-        text='Count'  # Exibir os valores nas barras
+        total_empenhado,
+        x=x_data,
+        y=y_data,
+        labels={'Periodo': label_x, y_data: y_label},
+        text=text_data,
+        category_orders={'Periodo': sort_order}
     )
 
-    # Ajustar layout para melhor legibilidade
-    fig.update_traces(
-        textposition='outside',  # Move o texto para fora da barra
-        cliponaxis=False  # Permite que o texto apareça mesmo em barras pequenas
-    )
-
-    # Adicionar margem no layout para acomodar os textos
+    # Atualiza o layout para melhor visualização
     fig.update_layout(
-        xaxis_tickangle=-45,  # Inclina os rótulos do eixo X
-        margin=dict(t=40, b=80)  # Ajusta as margens superior e inferior
+        xaxis=dict(type='category'),
+        xaxis_title=label_x,
+        yaxis_title=y_label,
+        title=titulo,
+        uniformtext_minsize=8,
+        uniformtext_mode='hide'
     )
-    
-    st.plotly_chart(fig)
+
+    # Ajusta a posição do texto e a formatação
+    fig.update_traces(
+        textposition='outside',
+        texttemplate='%{text}',
+        textfont=dict(color='#000000'),
+        marker_color='#0000ff'  # Opcional: Define a cor das barras, poderia ser uma cor, ex: 'blue'
+    )
+
+    # Exibe o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+    # # Opcional: Adiciona um botão para baixar os dados agrupados como CSV
+    # csv = total_empenhado.to_csv(index=False).encode('utf-8')
+    # st.download_button(
+    #     label="Baixar Dados como CSV",
+    #     data=csv,
+    #     file_name=f'empenhos_por_{periodo}.csv',
+    #     mime='text/csv',
+    # )
+
+    # # Opcional: Adiciona um botão para baixar o gráfico como PNG
+    # img_bytes = pio.to_image(fig, format='png')
+    # st.download_button(
+    #     label="Baixar Gráfico como PNG",
+    #     data=img_bytes,
+    #     file_name=f'empenhos_por_{periodo}.png',
+    #     mime='image/png',
+    # )

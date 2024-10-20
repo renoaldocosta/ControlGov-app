@@ -20,3 +20,4 @@ uvicorn
 motor
 plotly
 babel
+kaleido
