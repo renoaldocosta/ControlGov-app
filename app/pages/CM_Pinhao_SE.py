@@ -816,7 +816,7 @@ def visualizacoes(df: pd.DataFrame):
     with col1[1]:
         tipo_visualizacao = st.radio("Visualizar por:", ['Contagem', 'Valor'])
     with col1[3]:
-        tipo_periodo = st.radio("Período:", ['Mês', 'Bimestre', 'Trimestre', 'Quadrimestre', 'Ano'])
+        tipo_periodo = st.radio("Período:", ['Mês (Acumulado)', 'Mês', 'Bimestre', 'Trimestre', 'Quadrimestre', 'Ano'])
 
     if tipo_visualizacao == 'Contagem':
         agg_func = 'count'
@@ -825,7 +825,10 @@ def visualizacoes(df: pd.DataFrame):
         agg_func = 'sum'
         currency_symbol = 'R$'
     
-    if tipo_periodo == 'Mês':
+    if tipo_periodo == 'Mês (Acumulado)':
+        mkd_text("Valor Empenhado por Mês (Acumulado)", level='subheader', position='center')
+        chart_bar_empenho_periodo(df, 'mes (acumulado)', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
+    elif tipo_periodo == 'Mês':
         mkd_text("Valor Empenhado por Mês", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
     elif tipo_periodo == 'Ano':
@@ -905,14 +908,14 @@ def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max
     df_filtered = df[(df['Data_datetime'].dt.year >= min_year) & (df['Data_datetime'].dt.year <= max_year)].copy()
 
     # Define o período baseado no tipo especificado
-    if periodo.lower() == 'mes':
+    if periodo.lower() == 'mes (acumulado)':
         if month_names is None:
             # Se não forem fornecidos nomes de meses, utiliza os nomes abreviados em português
             month_names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
                            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
         df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.month.apply(lambda x: month_names[x - 1])
         sort_order = month_names
-        label_x = 'Mês'
+        label_x = 'Mês (Acumulado)'
         titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Mês ({min_year} ~ {max_year})'
         y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
     elif periodo.lower() == 'ano':
@@ -942,6 +945,13 @@ def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max
         label_x = 'Bimestre'
         titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Bimestre ({min_year} ~ {max_year})'
         y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
+    elif periodo.lower() == 'mes':
+        df_filtered['Mês'] = (df_filtered['Data_datetime'].dt.month - 1) // 1 + 1
+        df_filtered['Periodo'] = df_filtered['Data_datetime'].dt.year.astype(str)+ '-M' + df_filtered['Mês'].apply(lambda x: f'{x:02d}')
+        sort_order = sorted(df_filtered['Periodo'].unique())
+        label_x = 'Mês'
+        titulo = f'{"Quantidade de Empenhos" if agg_func == "count" else "Valor Empenhado"} por Mês ({min_year} ~ {max_year})'
+        y_label = 'Quantidade' if agg_func == 'count' else 'Valor Empenhado'
     else:
         st.error("Tipo de período inválido. Escolha entre 'mes', 'ano', 'quadrimestre', 'trimestre' ou 'bimestre'.")
         return
@@ -957,10 +967,10 @@ def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max
         return
 
     # Ordena os períodos cronologicamente
-    if periodo.lower() == 'mes':
+    if periodo.lower() == 'mes (acumulado)':
         # Ordena pelo índice dos nomes dos meses
         total_empenhado['Ordenacao'] = total_empenhado['Periodo'].apply(lambda x: sort_order.index(x))
-    elif periodo.lower() in ['ano', 'quadrimestre', 'trimestre', 'bimestre']:
+    elif periodo.lower() in ['ano', 'quadrimestre', 'trimestre', 'bimestre','mes']:
         # Ordena alfanumericamente
         total_empenhado['Ordenacao'] = total_empenhado['Periodo'].apply(lambda x: sort_order.index(x))
     total_empenhado = total_empenhado.sort_values('Ordenacao')
@@ -968,21 +978,21 @@ def chart_bar_empenho_periodo(df: pd.DataFrame, periodo: str, min_year: int, max
 
     # Aplica a formatação de moeda para os textos, se for soma
     if agg_func == 'sum':
-        total_empenhado['Valor_Formatado'] = total_empenhado['Valor_Empenhado'].apply(
+        total_empenhado['Valor Empenhado'] = total_empenhado['Valor_Empenhado'].apply(
             lambda x: format_currency(x, currency_symbol)
         )
     elif agg_func == 'count':
-        total_empenhado['Valor_Formatado'] = total_empenhado['Quantidade'].astype(str)
+        total_empenhado['Quantidade de Empenhos'] = total_empenhado['Quantidade'].astype(str)
 
     # Define os dados para plotagem
     if agg_func == 'sum':
         x_data = 'Periodo'
         y_data = 'Valor_Empenhado'
-        text_data = 'Valor_Formatado'
+        text_data = 'Valor Empenhado'
     elif agg_func == 'count':
         x_data = 'Periodo'
         y_data = 'Quantidade'
-        text_data = 'Valor_Formatado'
+        text_data = 'Quantidade de Empenhos'
 
     # Cria o gráfico de barras
     fig = px.bar(
