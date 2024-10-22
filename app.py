@@ -13,6 +13,20 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown(
+    """
+    <style>
+    :root {
+        --primaryColor: blue;
+        --backgroundColor: white;
+        --secondaryBackgroundColor: white;
+        --textColor: black;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Adiciona o caminho da pasta de páginas ao sys.path
 pages_dir = os.path.join(os.getcwd(), 'app', 'pages')
 sys.path.append(pages_dir)
@@ -25,8 +39,8 @@ def load_css():
     """Função para injetar CSS para ocultar elementos e definir estilos."""
     css = """
         <style>
-        #MainMenu {visibility: hidden;} /* Ocultar o menu principal do Streamlit */
-        header {visibility: hidden;} /* Ocultar o cabeçalho inteiro */
+        /*#MainMenu {visibility: hidden;} /* Ocultar o menu principal do Streamlit */
+        /*header {visibility: hidden;} /* Ocultar o cabeçalho inteiro */
         .st-emotion-cache-12fmjuu {padding-top: 0rem; margin-top: 0rem;} /* Reduz o padding e margin para o cabeçalho */
         .css-18e3th9 {padding-top: 0rem; padding-bottom: 0rem; background-color: white;} /* Ajusta o padding e define fundo da área principal */
         .css-1d391kg {background-color: white;} /* Define a cor de fundo da sidebar */

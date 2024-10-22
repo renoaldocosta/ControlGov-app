@@ -9,9 +9,15 @@ cssselect
 pytz
 pyarrow
 mypy
-pymongo
+pymongo==4.9.2
 python-dotenv
 streamlit-aggrid
 wordcloud
 matplotlib
 pygwalker
+fastapi
+uvicorn
+motor
+plotly
+babel
+kaleido
