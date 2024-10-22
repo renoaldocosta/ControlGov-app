@@ -95,10 +95,8 @@ def format_df(df_empenhos: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-<<<<<<< HEAD
 @st.cache_data(ttl=600)
-=======
-def converte_real_float(df, list_columns):
+def converte_real_float(df: pd.DataFrame, list_columns: list) -> pd.DataFrame:
     for column in list_columns:
         new_column = column + '_float'
         df[new_column] = (
@@ -209,7 +207,6 @@ def get_empenhos_API()-> pd.DataFrame:
 
 
 @st.cache_data(ttl=600) # Cache data for 10 minutes
->>>>>>> origin/features
 def get_empenhos(db_name: str, collection_name: str) -> pd.DataFrame:
     """
     Retrieve 'empenhos' data from MongoDB and return it as a DataFrame.
