@@ -59,6 +59,83 @@ def consultar_subelementos(query: str) -> str:
     else:
         return f"Erro ao consultar a API: {response.status_code}"
 
+def consultar_empenhado_sum(query=None):
+    url = 'https://api.controlgov.org/elementos/despesa/empenhado-sum/'
+    headers = {
+        'accept': 'application/json'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        elementos = data.get("elementos", [])
+        if not elementos:
+            return "Nenhum dado encontrado."
+
+        resultado = "Soma dos Valores Empenhados por Elemento de Despesa:\n\n"
+        for elemento in elementos:
+            elemento_despesa = elemento.get("elemento_de_despesa", "Desconhecido")
+            total_empenhado = elemento.get("total_empenhado", 0)
+            resultado += f"• {elemento_despesa}: R\$ {total_empenhado:,.2f}\n"
+
+        return resultado
+
+    except requests.exceptions.RequestException as e:
+        return f"Ocorreu um erro ao consultar a API: {e}"
+    except ValueError:
+        return "Erro ao processar a resposta da API."
+
+
+def listar_empenhos_por_elemento(query=None):
+    """
+    Consulta os empenhos por elemento de despesa e retorna uma lista formatada.
+    
+    Args:
+        query (str, opcional): Um termo para filtrar os elementos de despesa.
+                               Se None, retorna todos os elementos.
+    
+    Returns:
+        str: Lista formatada de empenhos por elemento com '\n' ao final de cada linha.
+    """
+    url = 'https://api.controlgov.org/elementos/despesa/empenhado-sum/'
+    headers = {
+        'accept': 'application/json'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        elementos = data.get("elementos", [])
+        if not elementos:
+            return "Nenhum dado encontrado."
+        
+        # Se uma consulta específica for fornecida, filtrar os elementos
+        if query:
+            elementos = [
+                elem for elem in elementos 
+                if query.lower() in elem.get("elemento_de_despesa", "").lower()
+            ]
+            if not elementos:
+                return f"Nenhum empenho encontrado para o elemento de despesa: '{query}'."
+        
+        resultado = "Empenhos por Elemento de Despesa:\n\n"
+        for elemento in elementos:
+            elemento_despesa = elemento.get("elemento_de_despesa", "Desconhecido")
+            total_empenhado = elemento.get("total_empenhado", 0)
+            resultado += f"• {elemento_despesa}: R\$ {total_empenhado:,.2f}\n"
+        
+        return resultado
+
+    except requests.exceptions.RequestException as e:
+        return f"Ocorreu um erro ao consultar a API: {e}"
+    except ValueError:
+        return "Erro ao processar a resposta da API."
+
+
 def generate_response_agent(text):
     
     # Set Tools
@@ -72,29 +149,60 @@ def generate_response_agent(text):
         name="Consultar Subelementos",
         func=consultar_subelementos,
         description=( "Use this tool to obtain information about financial sub-elements."
-                    "For example, you can ask: 'Qual o total empenhado para Fretes?'" )
+                    "For example, you can ask: 'Qual o total empenhado para Fretes?'" 
+        )
+    )
+    
+    # Definir a ferramenta para consultar empenhado sum
+    empenhado_sum_tool = Tool(
+        name="Consultar Empenhado Sum",
+        func=consultar_empenhado_sum,
+        description=(
+            "Use esta ferramenta para obter a soma de todos os valores empenhados para cada "
+            "elemento de despesa. Por exemplo, você pode perguntar: 'Qual a soma empenhada por elemento de despesa?'"
+        )
+    )
+    
+    # Definir a nova ferramenta para consultar empenhos por elemento
+    empenhos_por_elemento_tool = Tool(
+        name="Consultar Empenhos por Elemento",
+        func=listar_empenhos_por_elemento,
+        description=(
+            "Use esta ferramenta para obter a lista de empenhos por elemento de despesa. "
+            "Por exemplo, você pode perguntar: 'Quais são os empenhos para o elemento de despesa Fretes?' "
+            "Ou simplesmente: 'Liste todos os empenhos por elemento de despesa.'"
+        )
     )
 
+
+
     tools = [
-        Tool(
-            name="Search",
-            func=search.run,
-            description="Useful for when you need to get current, up to date answers.",
-        ),
-        Tool(
-            name="Weather",
-            func=weather.run,
-            description="Useful for when you need to get the current weather in a location.",
-        ),
-        subelementos_tool
+        # Tool(
+        #     name="Search",
+        #     func=search.run,
+        #     description="Useful for when you need to get current, up to date answers.",
+        # ),
+        # Tool(
+        #     name="Weather",
+        #     func=weather.run,
+        #     description="Useful for when you need to get the current weather in a location.",
+        # ),
+        subelementos_tool,
+        empenhado_sum_tool,
+        empenhos_por_elemento_tool
     ]
 
     # Set Chat Conversation
-
-    prefix = """ You are a friendly modern day planner.
+    # - Search: Useful for when you need to get current, up to date answers.
+    # - Weather: Useful for when you need to get the current weather in a location.
+    prefix = """You are a friendly modern day planner.
     You can help users to find activities in a given city based
     on their preferences and the weather.
-    You have access to the three tools:
+    You have access to the following tools:
+
+    - Consultar Subelementos: Use esta ferramenta para obter informações sobre subelementos financeiros.
+    - Consultar Empenhado Sum: Use esta ferramenta para obter a soma de todos os valores empenhados para cada elemento de despesa.
+    - Consultar Empenhos por Elemento: Use esta ferramenta para obter a lista de empenhos por elemento de despesa.
     """
 
     suffix = """
@@ -102,6 +210,7 @@ def generate_response_agent(text):
     {chat_history}
     Latest Question: {input}
     {agent_scratchpad}
+    Always respond in Portuguese.
     """
 
     prompt = ConversationalAgent.create_prompt(
@@ -128,7 +237,7 @@ def generate_response_agent(text):
     # Set Agent
 
     llm_chain = LLMChain(
-        llm=ChatOpenAI(temperature=0.8, model_name="gpt-4"),
+        llm=ChatOpenAI(temperature=0.8, model_name="gpt-4o-mini"),
         prompt=prompt,
         verbose=True
     )
@@ -196,7 +305,7 @@ def response_generation(text:str, openai_api_key):
     
     
     with st.chat_message("assistant"):
-        st.markdown(response)
+        st.write(response)
     
     # st.info(response)
     # responses = st.write_stream(stream)
@@ -230,13 +339,13 @@ def run(openai_api_key):
     
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.write(message["content"])
     
     if prompt:= st.chat_input("Whats is up?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.write(prompt)
         
         response_generation(prompt, openai_api_key)
     
