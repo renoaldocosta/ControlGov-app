@@ -38,6 +38,50 @@ weather = OpenWeatherMapAPIWrapper(openweathermap_api_key=OPENWEATHERMAP_API_KEY
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+
+def consultar_cpf_cnpj(query: str) -> str:
+    import requests
+
+    url = "https://api.controlgov.org/embeddings/subelementos"
+    payload = {
+        "query": query,
+        "secret": secret  # É recomendável armazenar o secret em uma variável de ambiente
+    }
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("resposta", "Nenhuma resposta encontrada.")
+    else:
+        return f"Erro ao consultar a API: {response.status_code}"
+
+def consultar_PessoaFisica_PessoaJuridica(query: str) -> str:
+    import requests
+
+    url = "https://api.controlgov.org/embeddings/subelementos"
+    payload = {
+        "query": query,
+        "secret": secret  # É recomendável armazenar o secret em uma variável de ambiente
+    }
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("resposta", "Nenhuma resposta encontrada.")
+    else:
+        return f"Erro ao consultar a API: {response.status_code}"
+
+
 def consultar_subelementos(query: str) -> str:
     import requests
 
@@ -55,6 +99,7 @@ def consultar_subelementos(query: str) -> str:
 
     if response.status_code == 200:
         data = response.json()
+        data['resposta'] = data['resposta'] + "\nFormatar valores em R$"
         return data.get("resposta", "Nenhuma resposta encontrada.")
     else:
         return f"Erro ao consultar a API: {response.status_code}"
@@ -167,6 +212,17 @@ def identificar_categoria_tool(query: str) -> str:
 
 
 def generate_response_agent(text):
+    # Consultar CPF ou CNPJ
+    text = "Me responda apenas:\n" + text
+    consultar_cpf_cnpj_tool = Tool(
+    name="Consultar CPF ou CNPJ",
+    func=consultar_cpf_cnpj,
+    description = (
+        "Use esta ferramenta para obter informações sobre CPF ou CNPJ de um credor."
+        "Por exemplo, você pode perguntar: 'Qual o CPF do credor <nome> com asteriscos?' ou 'Qual o CNPJ do credor <nome>?'"
+    )
+    )
+    
     
     # Definir as ferramentas
     subelementos_tool = Tool(
@@ -175,6 +231,15 @@ def generate_response_agent(text):
         description=(
             "Use esta ferramenta para obter informações sobre alguns subelementos financeiros. "
             "Por exemplo, você pode perguntar: 'Qual o total empenhado para o subelmento <subelemento>?'"
+        )
+    )
+    
+    empenho_pessoa_fisica_juridica = Tool(
+    name="Consultar Empenho a Pessoa Física ou Jurídica",
+    func=consultar_PessoaFisica_PessoaJuridica,
+    description=(
+            "Use esta ferramenta para obter informações sobre valores empenhados para Pessoa Física ou Pessoa Jurídica. "
+            "Por exemplo, você pode perguntar: 'Qual o total empenhado para <Pessoa Física>?' ou 'Qual o total empenhado para <Pessoa Jurídica>?'"
         )
     )
 
@@ -201,21 +266,24 @@ def generate_response_agent(text):
         subelementos_tool,
         # empenhado_sum_tool,
         empenhos_por_elemento_tool,
-        categoria_tool  # Adiciona a nova ferramenta aqui
+        empenho_pessoa_fisica_juridica,
+        consultar_cpf_cnpj_tool,
+        # categoria_tool  # Adiciona a nova ferramenta aqui
     ]
 
-    prefix = """Você é um assistente amigável especializado em finanças governamentais.
-    Você pode ajudar os usuários a consultar informações sobre elementos e subelementos de despesa.
+    prefix = """Você é um assistente direto e especializado em finanças governamentais.
+    Você pode ajudar os usuários a consultar informações sobre:
+    - elementos e subelementos de despesa, 
+    - consultas aos valores empenhados a Pessoas Físicas e Jurídicas.
+    - consultas a CPF ou CNPJ dos credores.
+    
     Você tem acesso às seguintes ferramentas:
     
-    Sempre comece identificando a categoria da consulta (elemento ou subelemento).
-    - Identificar Categoria: Use esta ferramenta para identificar se a consulta refere-se a um elemento ou subelemento de despesa. Se não for possível identificar, informe que são necessárias mais informações.
+    - Consultar Empenho a Pessoa Física ou Jurídica: Use esta ferramenta para obter informações sobre valores empenhados para PF ou PJ.
+    - Consultar CPF ou CNPJ: Use esta ferramenta para obter informações sobre CPF ou CNPJ dos credores.
+    - Consultar Subelemento Individualmente: Use esta ferramenta para obter informações sobre valores empenhados por subelementos de despesa.
+    - Consultar Todos os Elementos de uma Vez: Use esta ferramenta para obter a lista de valores empenhados por elemento de despesa.
     
-    - Consulta Tipo 1:
-        - Consultar Subelemento Individualmente: Use esta ferramenta para obter informações sobre valores empenhados por subelementos de despesa.
-
-    - Consulta Tipo 2:
-        - Consultar Todos os Elementos de uma Vez: Use esta ferramenta para obter a lista de valores empenhados por elemento de despesa.
     """
         # - Consultar Empenhado Sum: Use esta ferramenta para obter a soma de todos os valores empenhados para cada elemento de despesa.
 
@@ -225,6 +293,7 @@ def generate_response_agent(text):
     Última Pergunta: {input}
     {agent_scratchpad}
     Sempre responda em Português.
+    Responda apenas ao que foi perguntado. Evite informações desnecessárias.
     """
 
 
@@ -250,7 +319,7 @@ def generate_response_agent(text):
 
     # Configurar o LLM
     llm_chain = LLMChain(
-        llm=ChatOpenAI(temperature=0.8, model_name="gpt-4o-mini"),
+        llm=ChatOpenAI(temperature=0.5, model_name="gpt-4o-mini"),
         prompt=prompt,
         verbose=True
     )
@@ -300,7 +369,7 @@ def generate_response_agent(text):
 
 def response_generation(text: str, openai_api_key):
     with st.spinner("Estou pensando..."):
-        response = generate_response_agent(text)
+        response = generate_response_agent(text).replace("R$ ", "R\$ ")
     
     with st.chat_message("assistant"):
         st.write(response)
