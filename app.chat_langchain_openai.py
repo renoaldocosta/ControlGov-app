@@ -135,95 +135,108 @@ def listar_empenhos_por_elemento(query=None):
     except ValueError:
         return "Erro ao processar a resposta da API."
 
+def identificar_categoria(query: str) -> str:
+    elementos_keywords = ["elemento", "elemento de despesa", "elemento de"]
+    subelementos_keywords = ["subelemento", "sub", "sub elemento", "sub-elemento"]
+
+    # Converter a consulta para minúsculas para facilitar a comparação
+    query_lower = query.lower()
+
+    # Verificar presença de palavras-chave de elementos
+    if any(keyword in query_lower for keyword in elementos_keywords):
+        return "Consulta Tipo 2: Consulte por subelemento"
+
+    # Verificar presença de palavras-chave de subelementos
+    if any(keyword in query_lower for keyword in subelementos_keywords):
+        return "Consulta Tipo 1: Consulte por elemento"
+
+    # Se não identificar, solicitar mais informações
+    return "necessita_informacao. Pergunte se é um elemento ou subelemento."
+
+def identificar_categoria_tool(query: str) -> str:
+    categoria = identificar_categoria(query)
+    if categoria == "elemento":
+        return "A consulta refere-se a um **elemento** de despesa."
+    elif categoria == "subelemento":
+        return "A consulta refere-se a um **subelemento** de despesa."
+    else:
+        return "ERRO: Necessita de mais informações para identificar a categoria da consulta.\n Não consegui identificar se a consulta refere-se a um elemento ou subelemento de despesa."
+
+
+
+
 
 def generate_response_agent(text):
     
-    # Set Tools
-    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
-    OPENWEATHERMAP_API_KEY = os.getenv("OPENWEATHERMAP_API_KEY")
-
-    search = GoogleSerperAPIWrapper(serper_api_key=SERPER_API_KEY)
-    weather = OpenWeatherMapAPIWrapper(openweathermap_api_key=OPENWEATHERMAP_API_KEY)
-    # Definir a nova Tool
+    # Definir as ferramentas
     subelementos_tool = Tool(
-        name="Consultar Subelementos",
+        name="Consultar Subelemento Individualmente",
         func=consultar_subelementos,
-        description=( "Use this tool to obtain information about financial sub-elements."
-                    "For example, you can ask: 'Qual o total empenhado para Fretes?'" 
-        )
-    )
-    
-    # Definir a ferramenta para consultar empenhado sum
-    empenhado_sum_tool = Tool(
-        name="Consultar Empenhado Sum",
-        func=consultar_empenhado_sum,
         description=(
-            "Use esta ferramenta para obter a soma de todos os valores empenhados para cada "
-            "elemento de despesa. Por exemplo, você pode perguntar: 'Qual a soma empenhada por elemento de despesa?'"
+            "Use esta ferramenta para obter informações sobre alguns subelementos financeiros. "
+            "Por exemplo, você pode perguntar: 'Qual o total empenhado para o subelmento <subelemento>?'"
         )
     )
-    
-    # Definir a nova ferramenta para consultar empenhos por elemento
+
     empenhos_por_elemento_tool = Tool(
-        name="Consultar Empenhos por Elemento",
+        name="Consultar Todos os Elementos de uma Vez",
         func=listar_empenhos_por_elemento,
         description=(
             "Use esta ferramenta para obter a lista de empenhos por elemento de despesa. "
-            "Por exemplo, você pode perguntar: 'Quais são os empenhos para o elemento de despesa Fretes?' "
-            "Ou simplesmente: 'Liste todos os empenhos por elemento de despesa.'"
+            "Por exemplo, você pode perguntar: 'Quais são os empenhos para o elemento de despesa por Obrigação Patronal?' "
+        )
+    )
+            # "Ou simplesmente: 'Liste todos os empenhos por elemento de despesa.'"
+    
+    categoria_tool = Tool(
+        name="Identificar Categoria",
+        func=identificar_categoria_tool,
+        description=(
+            "Use esta ferramenta para identificar se a consulta do usuário refere-se a um elemento ou subelemento de despesa. "
+            "Se não for possível identificar, informe que são necessárias mais informações."
         )
     )
 
-
-
     tools = [
-        # Tool(
-        #     name="Search",
-        #     func=search.run,
-        #     description="Useful for when you need to get current, up to date answers.",
-        # ),
-        # Tool(
-        #     name="Weather",
-        #     func=weather.run,
-        #     description="Useful for when you need to get the current weather in a location.",
-        # ),
         subelementos_tool,
-        empenhado_sum_tool,
-        empenhos_por_elemento_tool
+        # empenhado_sum_tool,
+        empenhos_por_elemento_tool,
+        categoria_tool  # Adiciona a nova ferramenta aqui
     ]
 
-    # Set Chat Conversation
-    # - Search: Useful for when you need to get current, up to date answers.
-    # - Weather: Useful for when you need to get the current weather in a location.
-    prefix = """You are a friendly modern day planner.
-    You can help users to find activities in a given city based
-    on their preferences and the weather.
-    You have access to the following tools:
+    prefix = """Você é um assistente amigável especializado em finanças governamentais.
+    Você pode ajudar os usuários a consultar informações sobre elementos e subelementos de despesa.
+    Você tem acesso às seguintes ferramentas:
+    
+    Sempre comece identificando a categoria da consulta (elemento ou subelemento).
+    - Identificar Categoria: Use esta ferramenta para identificar se a consulta refere-se a um elemento ou subelemento de despesa. Se não for possível identificar, informe que são necessárias mais informações.
+    
+    - Consulta Tipo 1:
+        - Consultar Subelemento Individualmente: Use esta ferramenta para obter informações sobre valores empenhados por subelementos de despesa.
 
-    - Consultar Subelementos: Use esta ferramenta para obter informações sobre subelementos financeiros.
-    - Consultar Empenhado Sum: Use esta ferramenta para obter a soma de todos os valores empenhados para cada elemento de despesa.
-    - Consultar Empenhos por Elemento: Use esta ferramenta para obter a lista de empenhos por elemento de despesa.
+    - Consulta Tipo 2:
+        - Consultar Todos os Elementos de uma Vez: Use esta ferramenta para obter a lista de valores empenhados por elemento de despesa.
     """
+        # - Consultar Empenhado Sum: Use esta ferramenta para obter a soma de todos os valores empenhados para cada elemento de despesa.
 
     suffix = """
-    Chat History:
+    Histórico do Chat:
     {chat_history}
-    Latest Question: {input}
+    Última Pergunta: {input}
     {agent_scratchpad}
-    Always respond in Portuguese.
+    Sempre responda em Português.
     """
 
+
+    # Atualizar o prefixo do prompt para incluir a nova ferramenta
     prompt = ConversationalAgent.create_prompt(
         tools,
         prefix=prefix,
         suffix=suffix,
-        input_variables=["input",
-                        "chat_history",
-                        "agent_scratchpad"],
+        input_variables=["input", "chat_history", "agent_scratchpad"],
     )
 
-    # Set Memory
-
+    # Configurar a memória
     msg = StreamlitChatMessageHistory()
 
     if "memory" not in st.session_state:
@@ -233,15 +246,16 @@ def generate_response_agent(text):
             return_messages=True
         )
     memory = st.session_state.memory
+    
 
-    # Set Agent
-
+    # Configurar o LLM
     llm_chain = LLMChain(
         llm=ChatOpenAI(temperature=0.8, model_name="gpt-4o-mini"),
         prompt=prompt,
         verbose=True
     )
 
+    # Configurar o agente
     agent = ConversationalAgent(
         llm_chain=llm_chain,
         memory=memory,
@@ -250,21 +264,23 @@ def generate_response_agent(text):
         tools=tools
     )
 
-    agent_executor = AgentExecutor.from_agent_and_tools(agent=agent,
-                                                        tools=tools,
-                                                        memory=memory,
-                                                        verbose=True)
+    agent_executor = AgentExecutor.from_agent_and_tools(
+        agent=agent,
+        tools=tools,
+        memory=memory,
+        verbose=True
+    )
 
-    # query = st.text_input("O que você quer fazer hoje?", placeholder="Digite aqui...")
-
-    # if text:
-    #     with st.spinner("Estou pensando..."):
-    #         result = agent_executor.run(text)
-    #         st.info(result, icon="🤖")
-
+    # Executar o agente
     if text:
         result = agent_executor.run(text)
-    return result
+        
+        # Verificar se a resposta é a solicitação de mais informações
+        if "não consegui identificar" in result.lower():
+            return result  # Retorna imediatamente a mensagem solicitando mais informações
+        else:
+            return result
+
     
     # with st.expander("My thinking"):
     #     st.write(st.session_state.memory.chat_memory.messages)
@@ -282,51 +298,15 @@ def generate_response_agent(text):
 #     st.session_state.messages.append({"role": "assistant", "content": response})
     
 
-def response_generation(text:str, openai_api_key):
-    model = ChatOpenAI(
-        api_key = openai_api_key,
-        model = "gpt-3.5-turbo",
-        temperature=0.7,
-    )
-    messages = [
-                {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
-            ],
-    prompt = ChatPromptTemplate.from_template("Responda como um pirata: {message}. Portugues Brasil.")
-    parser = StrOutputParser()
-    chain = prompt | model | parser  # Define the chain
-    # stream = chain.stream({"message": f"{text}"})  # Stream output
-
-
-    # with st.spinner("Pensando..."):
-        # response = model.invoke(text).content
-def response_generation(text:str, openai_api_key):
+def response_generation(text: str, openai_api_key):
     with st.spinner("Estou pensando..."):
         response = generate_response_agent(text)
-    
     
     with st.chat_message("assistant"):
         st.write(response)
     
-    # st.info(response)
-    # responses = st.write_stream(stream)
-    
     st.session_state.messages.append({"role": "assistant", "content": response})
 
-    # # Função geradora para dividir os chunks em palavras
-    # def split_into_words(stream):
-    #     buffer = ""
-    #     for chunk in stream:
-    #         buffer += chunk
-    #         while ' ' in buffer:
-    #             word, buffer = buffer.split(' ', 1)
-    #             yield word + ' '
-    #     if buffer:
-    #         yield buffer
-
-    # # Usar a função geradora no write_stream
-    # responses = st.write_stream((stream))
-    # st.session_state.messages.append({"role": "assistant", "content": responses})
-    
     
 def run(openai_api_key):
     st.title("🦜🔗 Quickstart App")
@@ -339,32 +319,36 @@ def run(openai_api_key):
     
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.write(message["content"])
+            st.write(message["content"].replace("R$ ", "R\$ "))
     
-    if prompt:= st.chat_input("Whats is up?"):
+    if prompt := st.chat_input("O que você deseja consultar?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
         with st.chat_message("user"):
             st.write(prompt)
         
         response_generation(prompt, openai_api_key)
-    
-    # with st.form("my_form"):
-    #     text = st.text_area(
-    #         "Enter text:",
-    #         "Quais são os três conselhos principais para quem quer aprender langchain?"
-    #     )
-        
-    #     submitted = st.form_submit_button("Submit")
-        
-        
-    #     if not openai_api_key.startswith("sk-"):
-    #         st.warning("Please enter your OpenAI API key!", icon="🔑")
-        
-    #     if submitted and openai_api_key.startswith("sk-"):
-    #         with st.spinner("Generating response..."):
-    #             response_generation(text, openai_api_key)
+
             
 
 if __name__ == "__main__":
     run(openai_api_key)
+    # if st.session_state.memory:
+    #     st.write(st.session_state.memory.chat_memory.messages)
+    # # Deixa apenas as 2 últimas mensagens encaminhadas pelo HumanMessage
+    
+    # save_messages = st.session_state.memory.chat_memory.messages[-4:]
+    # for msg in save_messages:
+    #     if msg.type!="human":
+    #         save_messages.remove(msg)
+    # st.write(save_messages)
+    # st.session_state.memory.chat_memory.messages = save_messages
+            
+            
+        
+    # for msg in save_messages:
+    #     if msg["role"] == "user":
+    #         st.session_state.messages.append(msg)
+    # # Salva as mensagens no estado da sessão
+    # st.session_state.memory.chat_memory.messages = save_messages
+    
