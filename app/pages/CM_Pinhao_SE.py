@@ -14,19 +14,19 @@ from app.services.text_functions import mkd_text, mkd_text_divider
 import plotly.io as pio
 
 # LangChain Core
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
+# from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.prompts import ChatPromptTemplate
 
 # LangChain
 from langchain import LLMChain, OpenAI
 from langchain.agents import AgentExecutor, Tool, ConversationalAgent
 from langchain.memory import ConversationBufferMemory
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
-from langchain.utilities import GoogleSerperAPIWrapper, OpenWeatherMapAPIWrapper
+# from langchain.utilities import GoogleSerperAPIWrapper, OpenWeatherMapAPIWrapper
 
 # LangChain Community
 from langchain_community.chat_models import ChatOpenAI
-from langchain_community.llms import OpenAI
+# from langchain_community.llms import OpenAI
 
 # LangChain OpenAI
 from langchain_openai.chat_models import ChatOpenAI
@@ -573,6 +573,7 @@ def metrics(df: pd.DataFrame):
     valor_minimo = df['Empenhado_float'].min()
     valor_medio = df['Empenhado_float'].mean()
     valor_maximo = df['Empenhado_float'].max()
+    valor_total = df['Empenhado_float'].sum()
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -586,9 +587,12 @@ def metrics(df: pd.DataFrame):
     with col4:
         st.metric("Valor Mínimo", format_currency(valor_minimo, currency_symbol='R$'))
     with col5:
-        st.metric("Valor Médio", format_currency(valor_medio, currency_symbol='R$'))
-    with col6:
+        # st.metric("Valor Médio", format_currency(valor_medio, currency_symbol='R$'))
         st.metric("Valor Máximo", format_currency(valor_maximo, currency_symbol='R$'))
+        
+    with col6:
+        st.metric("Soma", format_currency(valor_total, currency_symbol='R$'))
+        
 
 
 def format_currency(value: float, currency_symbol: str = '') -> str:
@@ -1092,7 +1096,7 @@ def run():
     mkd_text_divider("Registros", level='subheader', position='center')
 
     # Criar abas
-    tab1, tab2, tab3, tab4 = st.tabs(['Empenhos', 'Liquidações', 'Pagamentos', '**ChatBot** 🤖'])
+    tab1, tab2, tab3, tab4 = st.tabs(['Empenhos', 'Liquidações', 'Pagamentos', '🤖 **ChatBot**'])
 
     # Preparar o DataFrame para exibição
     df_to_show = prepare_dataframe(df_filtered)
@@ -1105,7 +1109,13 @@ def run():
             st.dataframe(df_to_show)
             
         mkd_text_divider("Visualizações", level='subheader', position='center')
-        visualizacoes(df_filtered)
+        tab_empenhos, tab_classificacao_despesa = st.tabs(['Contagem e Valores', 'Classificação da Despesa'])
+        with tab_empenhos:
+            with st.container(border=1):
+                mostra_contagem_quantitativo_empenho(df_filtered)
+        with tab_classificacao_despesa:
+            with st.container(border=1):
+                plot_empenhos_simples(df_filtered)
 
     with tab4:
         st.write()
@@ -1166,11 +1176,173 @@ def run():
         
         st.toast(response, icon='🤖')
     
+    # chart_bar_empenho_elemento(df_filtered)
+    
+
+
+def plot_empenhos_simples(df: pd.DataFrame):
+    """
+    Plota um gráfico de barras horizontais simples mostrando Valor Empenhado ou Quantidade de Empenhos
+    agrupados por Elemento_de_Despesa ou Subelemento, ordenados do maior para o menor.
+    
+    Args:
+        df (pd.DataFrame): DataFrame contendo as colunas 'Elemento_de_Despesa', 'Subelemento', e 'Empenhado_float'.
+    """
+    
+    # Exibe o DataFrame opcionalmente
+    # mostrar_dados = st.checkbox("Mostrar Dados")
+        # st.subheader("Dados de Empenhos")
+        # st.dataframe(df)
+
+    # Chama a função de plotagem
+    # Verifica se as colunas necessárias estão presentes
+      # st.write("")
+    st.write("")
+    st.write("")
+    required_columns = ['Elemento_de_Despesa', 'Subelemento', 'Empenhado_float', 'Data_datetime']
+    
+ 
+    for col in required_columns:
+        if col not in df.columns:
+            st.error(f"A coluna '{col}' está faltando no DataFrame.")
+            return
+
+    # Interface do Usuário com radio buttons
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        tipo_agregacao = st.radio(
+            "Visualizar por:",
+            ('Valor Empenhado', 'Quantidade de Empenhos'),
+            key='agregacao'
+        )
+    with col2:
+        tipo_agrupamento = st.radio(
+            "Agrupar por:",
+            ('Elemento de Despesa', 'Subelemento de Despesa'),
+            key='agrupamento'
+        )
+        titulo_grafico = tipo_agrupamento
+        if tipo_agrupamento == 'Elemento de Despesa':
+            tipo_agrupamento = 'Elemento_de_Despesa'
+        else:
+            tipo_agrupamento = 'Subelemento'
+            # Elemento de Despesa', 'Subelemento de Despesa
+    
+    with col3:
+        # Seleção do agrupamento
+        Ordenacao = st.radio(
+            "Ordenarção:",
+            ('Crescente', 'Decrescente'),
+            key='ordenacao',
+            index=1
+        )
+        if Ordenacao == 'Crescente':
+            ordenacao_value = True
+            total_descending_ascending = 'total descending'
+        else:
+            ordenacao_value = False
+            total_descending_ascending = 'total ascending'
+    # st.write("")
+    # st.write("")
+    # st.write("")
+    with col4:
+        mostrar_registros = st.selectbox('Mostrar X primeiros registros', ['Todos',5, 10, 15, 20, 25, 30, 35, 40, 45, 50], index=3)
+    # Agregação dos dados
+    if tipo_agregacao == 'Valor Empenhado':
+        df_agg = df.groupby(tipo_agrupamento)['Empenhado_float'].sum().reset_index()
+        y_label = 'Valor Empenhado (R$)'
+        y_data = 'Empenhado_float'
+    else:
+        df_agg = df.groupby(tipo_agrupamento).size().reset_index(name='Quantidade')
+        y_label = 'Quantidade de Empenhos'
+        y_data = 'Quantidade'
+
+    # Ordena os dados do maior para o menor
+    df_agg = df_agg.sort_values(by=y_data, ascending=ordenacao_value)  # Para barras horizontais, 'ascending=True' ordena do maior no topo
+    
+    # Filtra os X primeiros
+    if mostrar_registros != 'Todos':
+        df_agg = df_agg.head(mostrar_registros)
+        
+    with st.expander("Registros", expanded=False):
+        df_agg_show = df_agg.copy()
+        
+        # confirma se há a coluna 'Empenhado_float' no DataFrame    
+        mkd_text(f"Quantidade de registros: {df_agg.shape[0]}", level='h5')
+        if 'Empenhado_float' in df_agg_show.columns:
+            # Formata coluna Empenhado_float para ter duas casas : 0.00
+            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].astype(float).apply(lambda x: f'R$ {x:,.2f}')
+            # Descobre qual a maior quantidade de caracteres em Empenhado_float
+            max_len = df_agg_show['Empenhado_float'].str.len().max()
+            # Deixa todos os valores da coluna Empenhado_float com mesma quantidade de caracteres, inserindo espaço em branco a esquerda
+            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].apply(lambda x: x.rjust(max_len, '_'))
+        if tipo_agrupamento == 'Elemento_de_Despesa':
+            st.dataframe(df_agg_show.rename(columns={'Elemento_de_Despesa': 'Elemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
+        else:
+            st.dataframe(df_agg_show.rename(columns={'Subelemento': 'Subelemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
+    # st.write("")
+    st.write("")
+    st.write("")
+    mkd_text(f"{tipo_agregacao} por {titulo_grafico} ({Ordenacao})", level='subheader', position='center')
+    st.write("")
+    st.write("")
+    # Define labels e títulos
+    label_y = tipo_agrupamento.replace('_', ' ')
+    ano_menor = df['Data_datetime'].dt.year.min()
+    ano_maior = df['Data_datetime'].dt.year.max()
+    titulo = f"{tipo_agregacao} por {label_y} ({ano_menor} - {ano_maior})"
+
+    # Cria o gráfico de barras horizontais
+    fig = px.bar(
+        df_agg,
+        x=y_data,
+        y=tipo_agrupamento,
+        orientation='h',
+        labels={
+            tipo_agrupamento: label_y,
+            y_data: y_label
+        },
+        text=y_data,
+        color=tipo_agrupamento,
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+
+    # Atualiza o layout para melhor visualização
+    fig.update_layout(
+        xaxis=dict(type='linear'),
+        xaxis_title=y_label,
+        yaxis_title=label_y,
+        title=titulo,
+        uniformtext_minsize=8,
+        uniformtext_mode='hide',
+        yaxis={'categoryorder': total_descending_ascending},  # Ordena do maior para o menor
+        margin=dict(l=150, r=30, t=50, b=50),  # Ajusta as margens para acomodar os rótulos
+        height=800  # Altura do gráfico, pode ajustar conforme necessário
+    )
+
+    # Ajusta a posição do texto e a formatação
+    fig.update_traces(
+        textposition='inside',
+        texttemplate='%{text:.2s}',
+        textfont=dict(color='#ffffff'),
+        marker_color='#0000ff'  # Define a cor das barras como azul
+    )
+
+    # Remove a legenda, pois as barras já representam as categorias
+    fig.update_layout(showlegend=False)
+
+    # Exibe o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True, height=800)
+
+
+
+
+
     
 if __name__ == "__main__":
     run()
 
-def visualizacoes(df: pd.DataFrame):
+def mostra_contagem_quantitativo_empenho(df: pd.DataFrame):
     min_year = df['Data_datetime'].dt.year.min()
     max_year = df['Data_datetime'].dt.year.max()
     
@@ -1186,29 +1358,31 @@ def visualizacoes(df: pd.DataFrame):
         tipo_periodo = st.radio("Período:", ['Mês (Acumulado)', 'Mês', 'Bimestre', 'Trimestre', 'Quadrimestre', 'Ano'])
 
     if tipo_visualizacao == 'Contagem':
+        titulo = 'Quantidade de Empenhos'
         agg_func = 'count'
         currency_symbol = ''
     else:
+        titulo = 'Valor Empenhado'
         agg_func = 'sum'
         currency_symbol = 'R$'
     
     if tipo_periodo == 'Mês (Acumulado)':
-        mkd_text("Valor Empenhado por Mês (Acumulado)", level='subheader', position='center')
+        mkd_text(f"{titulo} por Mês (Acumulado)", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'mes (acumulado)', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
     elif tipo_periodo == 'Mês':
-        mkd_text("Valor Empenhado por Mês", level='subheader', position='center')
+        mkd_text(f"{titulo} por Mês", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
     elif tipo_periodo == 'Ano':
-        mkd_text("Valor Empenhado por Ano", level='subheader', position='center')
+        mkd_text(f"{titulo} por Ano", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
     elif tipo_periodo == 'Quadrimestre':
-        mkd_text("Valor Empenhado por Quadrimestre", level='subheader', position='center')
+        mkd_text(f"{titulo} por Quadrimestre", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
     elif tipo_periodo == 'Trimestre':
-        mkd_text("Valor Empenhado por Trimestre", level='subheader', position='center')
+        mkd_text(f"{titulo} por Trimestre", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
     elif tipo_periodo == 'Bimestre':
-        mkd_text("Valor Empenhado por Bimestre", level='subheader', position='center')
+        mkd_text(f"{titulo} por Bimestre", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
 
 
