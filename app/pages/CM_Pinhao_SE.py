@@ -325,13 +325,13 @@ def response_generation(text: str, openai_api_key):
     # st.session_state.messages.append({"role": "assistant", "content": response})
 def run_chat(openai_api_key: str):
     mkd_text("🤖 Chatbot de Atendimento CMP", level='subheader', position='center')
-
+    column_novo, column_mostrar_chat = st.columns([0.1, 0.9])
     if "openai_model" not in st.session_state:
         st.session_state.openai_model = "gpt-3.5-turbo"
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
+    return column_novo, column_mostrar_chat
     # for message in st.session_state.messages:
     #     with st.chat_message(message["role"]):
     #         st.write(message["content"].replace("R$ ", "R\$ "))
@@ -1135,7 +1135,10 @@ def run():
     # Segunda aba (Exploração)
     with tab4:
         st.write()
-        run_chat(openai_api_key)
+        column_novo, column_mostrar_chat = run_chat(openai_api_key)
+        
+        conteiner_chat = st.container()
+        
         if "atualizar_chat" not in st.session_state:
             st.session_state.atualizar_chat = False
         if "cont_chat" not in st.session_state:
@@ -1147,35 +1150,39 @@ def run():
             if st.session_state.atualizar_chat:
                 if st.session_state.atualizar_chat:
                     cont = 0
-                    for message in st.session_state.messages_backup:
-                        with st.chat_message(message["role"]):
-                            st.write(message["content"].replace("R$ ", "R\$ "))
-                        cont += 1
-                    st.session_state.cont_chat = cont
-                    st.session_state.atualizar_chat = False
-        if st.button("Novo Chat", use_container_width=True):
-            st.session_state.messages.clear()
-            st.session_state.messages_backup.clear()
-            st.session_state.cont_chat = 0
-            st.session_state.atualizar_chat = False
-        if not st.session_state.atualizar_chat or st.session_state.cont_chat != len(st.session_state.messages):
-            if st.button("Atualizar", use_container_width=True):
-                # st.write(st.session_state.atualizar_chat)
-                # st.write(st.session_state.cont_chat)
-                # st.write(len(st.session_state.messages))
-                st.session_state.atualizar_chat = True
-                st.session_state.messages_backup = st.session_state.messages
-                
-                if "atualizar_chat" in st.session_state:
-                    if st.session_state.atualizar_chat:
-                        cont = 0
+                    with conteiner_chat:
                         for message in st.session_state.messages_backup:
                             with st.chat_message(message["role"]):
                                 st.write(message["content"].replace("R$ ", "R\$ "))
                             cont += 1
-                        st.session_state.cont_chat = cont
-                        st.session_state.atualizar_chat = False
-                
+                    st.session_state.cont_chat = cont
+                    st.session_state.atualizar_chat = False
+        with column_novo:
+            if st.button("Novo", use_container_width=True):
+                st.session_state.messages.clear()
+                st.session_state.messages_backup.clear()
+                st.session_state.cont_chat = 0
+                st.session_state.atualizar_chat = False
+        if not st.session_state.atualizar_chat or st.session_state.cont_chat != len(st.session_state.messages):
+            with column_mostrar_chat:
+                if st.button("Mostrar Chat Atualizado", use_container_width=True):
+                    # st.write(st.session_state.atualizar_chat)
+                    # st.write(st.session_state.cont_chat)
+                    # st.write(len(st.session_state.messages))
+                    st.session_state.atualizar_chat = True
+                    st.session_state.messages_backup = st.session_state.messages
+                    
+                    if "atualizar_chat" in st.session_state:
+                        if st.session_state.atualizar_chat:
+                            cont = 0
+                            with conteiner_chat:
+                                for message in st.session_state.messages_backup:
+                                    with st.chat_message(message["role"]):
+                                        st.write(message["content"].replace("R$ ", "R\$ "))
+                                    cont += 1
+                            st.session_state.cont_chat = cont
+                            st.session_state.atualizar_chat = False
+                    
             # st.session_state.messages.clear()
             # st.session_state.messages = st.session_state.messages_backup
             
@@ -1189,7 +1196,7 @@ def run():
     with tab2:
         st.write('Ainda não implementado.')
     
-    if prompt := st.chat_input("O que você deseja consultar?", key="chat_input"):
+    if prompt := st.chat_input("🤖: O que você deseja consultar?", key="chat_input"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
        
