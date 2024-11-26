@@ -406,13 +406,9 @@ def format_df(df_empenhos: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-<<<<<<< HEAD
 @st.cache_data(ttl=600)
 def converte_real_float(df: pd.DataFrame, list_columns: list) -> pd.DataFrame:
-=======
-# Function to convert currency columns to float
-def converte_real_float(df, list_columns):
->>>>>>> origin/features
+
     for column in list_columns:
         new_column = column + '_float'
         df[new_column] = (
