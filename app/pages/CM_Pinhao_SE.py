@@ -13,14 +13,322 @@ import plotly.express as px
 from app.services.text_functions import mkd_text, mkd_text_divider
 import plotly.io as pio
 
-# Dictionary to translate month numbers to Portuguese month names
+# LangChain Core
+# from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.prompts import ChatPromptTemplate
+
+# LangChain
+from langchain import LLMChain, OpenAI
+from langchain.agents import AgentExecutor, Tool, ConversationalAgent
+from langchain.memory import ConversationBufferMemory
+from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
+# from langchain.utilities import GoogleSerperAPIWrapper, OpenWeatherMapAPIWrapper
+
+# LangChain Community
+from langchain_community.chat_models import ChatOpenAI
+# from langchain_community.llms import OpenAI
+
+# LangChain OpenAI
+from langchain_openai.chat_models import ChatOpenAI
+
+
+load_dotenv()
+
+secret = os.getenv("API_SECRET")
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+# Função que consulta a API do ControlGov para obter informações sobre CPF ou CNPJ
+def consultar_cpf_cnpj(query: str) -> str:
+    import requests
+
+    url = "https://api.controlgov.org/embeddings/subelementos"
+    payload = {
+        "query": query,
+        "secret": secret,  
+    }
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("resposta", "Nenhuma resposta encontrada.")
+    else:
+        return f"Erro ao consultar a API: {response.status_code}"
+
+
+# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
+def consultar_PessoaFisica_PessoaJuridica(query: str) -> str:
+    import requests
+
+    url = "https://api.controlgov.org/embeddings/subelementos"
+    payload = {
+        "query": query,
+        "secret": secret,  
+    }
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("resposta", "Nenhuma resposta encontrada.")
+    else:
+        return f"Erro ao consultar a API: {response.status_code}"
+
+
+# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
+def consultar_subelementos(query: str) -> str:
+    import requests
+
+    url = "https://api.controlgov.org/embeddings/subelementos"
+    payload = {
+        "query": query,
+        "secret": secret,  # É recomendável armazenar o secret em uma variável de ambiente
+    }
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
+
+    if response.status_code == 200:
+        data = response.json()
+        data["resposta"] = data["resposta"] + "\nFormatar valores em R$"
+        return data.get("resposta", "Nenhuma resposta encontrada.")
+    else:
+        return f"Erro ao consultar a API: {response.status_code}"
+
+
+# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
+def consultar_empenhado_sum(query=None):
+    url = "https://api.controlgov.org/elementos/despesa/empenhado-sum/"
+    headers = {"accept": "application/json"}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        elementos = data.get("elementos", [])
+        if not elementos:
+            return "Nenhum dado encontrado."
+
+        resultado = "Soma dos Valores Empenhados por Elemento de Despesa:\n\n"
+        for elemento in elementos:
+            elemento_despesa = elemento.get("elemento_de_despesa", "Desconhecido")
+            total_empenhado = elemento.get("total_empenhado", 0)
+            resultado += f"• {elemento_despesa}: R\$ {total_empenhado:,.2f}\n"
+
+        return resultado
+
+    except requests.exceptions.RequestException as e:
+        return f"Ocorreu um erro ao consultar a API: {e}"
+    except ValueError:
+        return "Erro ao processar a resposta da API."
+
+
+# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
+def listar_empenhos_por_elemento(query=None):
+    url = "https://api.controlgov.org/elementos/despesa/empenhado-sum/"
+    headers = {"accept": "application/json"}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        elementos = data.get("elementos", [])
+        if not elementos:
+            return "Nenhum dado encontrado."
+
+        # Se uma consulta específica for fornecida, filtrar os elementos
+        if query:
+            elementos = [
+                elem
+                for elem in elementos
+                if query.lower() in elem.get("elemento_de_despesa", "").lower()
+            ]
+            if not elementos:
+                return (
+                    f"Nenhum empenho encontrado para o elemento de despesa: '{query}'."
+                )
+
+        resultado = "Empenhos por Elemento de Despesa:\n\n"
+        for elemento in elementos:
+            elemento_despesa = elemento.get("elemento_de_despesa", "Desconhecido")
+            total_empenhado = elemento.get("total_empenhado", 0)
+            resultado += f"• {elemento_despesa}: R\$ {total_empenhado:,.2f}\n"
+
+        return resultado
+
+    except requests.exceptions.RequestException as e:
+        return f"Ocorreu um erro ao consultar a API: {e}"
+    except ValueError:
+        return "Erro ao processar a resposta da API."
+
+
+# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
+def generate_response_agent(text):
+    # Consultar CPF ou CNPJ
+    text = "Me responda apenas:\n" + text
+    consultar_cpf_cnpj_tool = Tool(
+        name="Consultar CPF ou CNPJ",
+        func=consultar_cpf_cnpj,
+        description=(
+            "Use esta ferramenta para obter informações sobre CPF ou CNPJ de um credor."
+            "Por exemplo, você pode perguntar: 'Qual o CPF do credor <nome> com asteriscos?' ou 'Qual o CNPJ do credor <nome>?'"
+        ),
+    )
+
+    # Definir as ferramentas
+    subelementos_tool = Tool(
+        name="Consultar Subelemento Individualmente",
+        func=consultar_subelementos,
+        description=(
+            "Use esta ferramenta para obter informações sobre alguns subelementos financeiros. "
+            "Por exemplo, você pode perguntar: 'Qual o total empenhado para o subelmento <subelemento>?'"
+        ),
+    )
+
+    empenho_pessoa_fisica_juridica = Tool(
+        name="Consultar Empenho a Pessoa Física ou Jurídica",
+        func=consultar_PessoaFisica_PessoaJuridica,
+        description=(
+            "Use esta ferramenta para obter informações sobre valores empenhados para Pessoa Física ou Pessoa Jurídica. "
+            "Por exemplo, você pode perguntar: 'Qual o total empenhado para <Pessoa Física>?' ou 'Qual o total empenhado para <Pessoa Jurídica>?'"
+        ),
+    )
+
+    empenhos_por_elemento_tool = Tool(
+        name="Consultar Todos os Elementos de uma Vez",
+        func=listar_empenhos_por_elemento,
+        description=(
+            "Use esta ferramenta para obter a lista de empenhos por elemento de despesa. "
+            "Por exemplo, você pode perguntar: 'Quais são os empenhos para o elemento de despesa por Obrigação Patronal?' "
+        ),
+    )
+
+    tools = [
+        subelementos_tool,
+        # empenhado_sum_tool,
+        empenhos_por_elemento_tool,
+        empenho_pessoa_fisica_juridica,
+        consultar_cpf_cnpj_tool,
+        # categoria_tool  # Adiciona a nova ferramenta aqui
+    ]
+
+    prefix = """Você é um assistente direto e especializado em finanças governamentais.
+    Você pode ajudar os usuários a consultar informações sobre:
+    - elementos e subelementos de despesa, 
+    - consultas aos valores empenhados a Pessoas Físicas e Jurídicas.
+    - consultas a CPF ou CNPJ dos credores.
+    
+    Você tem acesso às seguintes ferramentas:
+    
+    - Consultar Empenho a Pessoa Física ou Jurídica: Use esta ferramenta para obter informações sobre valores empenhados para PF ou PJ.
+    - Consultar CPF ou CNPJ: Use esta ferramenta para obter informações sobre CPF ou CNPJ dos credores.
+    - Consultar Subelemento Individualmente: Use esta ferramenta para obter informações sobre valores empenhados por subelementos de despesa.
+    - Consultar Todos os Elementos de uma Vez: Use esta ferramenta para obter a lista de valores empenhados por elemento de despesa.
+    
+    """
+    # - Consultar Empenhado Sum: Use esta ferramenta para obter a soma de todos os valores empenhados para cada elemento de despesa.
+
+    suffix = """
+    Histórico do Chat:
+    {chat_history}
+    Última Pergunta: {input}
+    {agent_scratchpad}
+    Sempre responda em Português.
+    Responda apenas ao que foi perguntado. Evite informações desnecessárias.
+    """
+
+    # Atualizar o prefixo do prompt para incluir a nova ferramenta
+    prompt = ConversationalAgent.create_prompt(
+        tools,
+        prefix=prefix,
+        suffix=suffix,
+        input_variables=["input", "chat_history", "agent_scratchpad"],
+    )
+
+    # Configurar a memória
+    msg = StreamlitChatMessageHistory()
+
+    if "memory" not in st.session_state:
+        st.session_state.memory = ConversationBufferMemory(
+            messages=msg, memory_key="chat_history", return_messages=True
+        )
+    memory = st.session_state.memory
+
+    # Configurar o LLM
+    llm_chain = LLMChain(
+        llm=ChatOpenAI(temperature=0.5, model_name="gpt-4o-mini"),
+        prompt=prompt,
+        verbose=True,
+    )
+
+    # Configurar o agente
+    agent = ConversationalAgent(
+        llm_chain=llm_chain,
+        memory=memory,
+        verbose=True,
+        max_interactions=3,
+        tools=tools,
+    )
+
+    agent_executor = AgentExecutor.from_agent_and_tools(
+        agent=agent, tools=tools, memory=memory, verbose=True
+    )
+
+    # Executar o agente
+    if text:
+        result = agent_executor.run(text)
+        return result if "não consegui identificar" not in result.lower() else result
+
+
+# Função que gera a resposta do agente de atendimento
+def response_generation(text: str, openai_api_key):
+    # time.sleep(1)
+    with st.spinner("Estou pensando..."):
+        st.toast("Pensando!", icon="🤖")
+        response = (
+            generate_response_agent(text)
+            .replace("R$ ", "R\$ ")
+            .replace(".\n```", "")
+            .replace("*", "\*")
+        )
+
+    return response
+
+
+# Função que executa o chatbot
+def run_chat(openai_api_key: str):
+    mkd_text("🤖 Chatbot de Gerencial CMP/SE", level="subheader", position="center")
+    column_novo, column_mostrar_chat = st.columns([0.1, 0.9])
+    if "openai_model" not in st.session_state:
+        st.session_state.openai_model = "gpt-3.5-turbo"
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    return column_novo, column_mostrar_chat
+
+
+# Dicionário para traduzir números de mês para nomes de mês em português
 MONTH_TRANSLATION = {
-    1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
-    5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
-    9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+    1: "Janeiro",
+    2: "Fevereiro",
+    3: "Março",
+    4: "Abril",
+    5: "Maio",
+    6: "Junho",
+    7: "Julho",
+    8: "Agosto",
+    9: "Setembro",
+    10: "Outubro",
+    11: "Novembro",
+    12: "Dezembro",
 }
 
 
+# Função para testar a conexão com o MongoDB
 def test_mongodb_connection(db_name: str, collection_name: str) -> MongoClient:
     """
     Test the connection to MongoDB and return the collection.
@@ -37,21 +345,24 @@ def test_mongodb_connection(db_name: str, collection_name: str) -> MongoClient:
     """
     with st.spinner("Testing MongoDB Connection..."):
         load_dotenv()
-        db_password = os.environ.get('db_password')
+        db_password = os.environ.get("db_password")
         uri = f"mongodb+srv://renoaldo_teste:{db_password}@cluster0.zmdkz1p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
         client = MongoClient(uri)
 
         try:
-            client.admin.command('ping')
-            
+            client.admin.command("ping")
+
             db = client[db_name]
             collection = db[collection_name]
             return collection
         except Exception as e:
             st.error(f"Error: {e}")
-            raise SystemExit("Unable to connect to the database. Please check your URI.")
+            raise SystemExit(
+                "Unable to connect to the database. Please check your URI."
+            )
 
 
+# Function to format the DataFrame
 def format_df(df_empenhos: pd.DataFrame) -> pd.DataFrame:
     """
     Format the 'df_empenhos' DataFrame by cleaning and converting data types.
@@ -95,8 +406,13 @@ def format_df(df_empenhos: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+<<<<<<< HEAD
 @st.cache_data(ttl=600)
 def converte_real_float(df: pd.DataFrame, list_columns: list) -> pd.DataFrame:
+=======
+# Function to convert currency columns to float
+def converte_real_float(df, list_columns):
+>>>>>>> origin/features
     for column in list_columns:
         new_column = column + '_float'
         df[new_column] = (
@@ -109,21 +425,26 @@ def converte_real_float(df: pd.DataFrame, list_columns: list) -> pd.DataFrame:
     return df  # Fixed return statement
 
 
+# Function to convert date columns to datetime
 def converte_data_datetime(df, list_columns):
     for column in list_columns:
         new_column = column + '_datetime'
         df[new_column] = pd.to_datetime(df[column], errors='coerce')
     return df
 
+
+# Function to process the 'Item(ns)' column
 def processa_itens_column(value):
     if isinstance(value, list):
-        # Se for uma lista aninhada, converte cada item interno para string e faz join
-        return ', '.join(
-            ', '.join(map(str, item)) if isinstance(item, list) else str(item)
+        # If a nested list, convert each inner item to string and join
+        return ", ".join(
+            ", ".join(map(str, item)) if isinstance(item, list) else str(item)
             for item in value
         )
-    return str(value)  # Caso não seja uma lista, apenas converte para string
+    return str(value) # Case not a list, just convert to string
 
+
+# Function to split the 'Credor' column
 def controlgov_api_request(url: str) -> pd.DataFrame:
     """
     Make a request to the ControlGov API and return the data as a DataFrame.
@@ -206,7 +527,7 @@ def get_empenhos_API()-> pd.DataFrame:
             return st.session_state['df_empenhos']
 
 
-@st.cache_data(ttl=600) # Cache data for 10 minutes
+@st.cache_data(ttl=1800) # Cache data for 10 minutes
 def get_empenhos(db_name: str, collection_name: str) -> pd.DataFrame:
     """
     Retrieve 'empenhos' data from MongoDB and return it as a DataFrame.
@@ -257,6 +578,7 @@ def metrics(df: pd.DataFrame):
     valor_minimo = df['Empenhado_float'].min()
     valor_medio = df['Empenhado_float'].mean()
     valor_maximo = df['Empenhado_float'].max()
+    valor_total = df['Empenhado_float'].sum()
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -270,9 +592,12 @@ def metrics(df: pd.DataFrame):
     with col4:
         st.metric("Valor Mínimo", format_currency(valor_minimo, currency_symbol='R$'))
     with col5:
-        st.metric("Valor Médio", format_currency(valor_medio, currency_symbol='R$'))
-    with col6:
+        # st.metric("Valor Médio", format_currency(valor_medio, currency_symbol='R$'))
         st.metric("Valor Máximo", format_currency(valor_maximo, currency_symbol='R$'))
+        
+    with col6:
+        st.metric("Soma", format_currency(valor_total, currency_symbol='R$'))
+        
 
 
 def format_currency(value: float, currency_symbol: str = '') -> str:
@@ -776,7 +1101,7 @@ def run():
     mkd_text_divider("Registros", level='subheader', position='center')
 
     # Criar abas
-    tab1, tab2, tab3 = st.tabs(['Empenhos', 'Liquidações', 'Pagamentos'])
+    tab1, tab2, tab3, tab4 = st.tabs(['Empenhos', 'Liquidações', 'Pagamentos', '🤖 **ChatBot**'])
 
     # Preparar o DataFrame para exibição
     df_to_show = prepare_dataframe(df_filtered)
@@ -789,22 +1114,240 @@ def run():
             st.dataframe(df_to_show)
             
         mkd_text_divider("Visualizações", level='subheader', position='center')
-        visualizacoes(df_filtered)
+        tab_empenhos, tab_classificacao_despesa = st.tabs(['Contagem e Valores', 'Classificação da Despesa'])
+        with tab_empenhos:
+            with st.container(border=1):
+                mostra_contagem_quantitativo_empenho(df_filtered)
+        with tab_classificacao_despesa:
+            with st.container(border=1):
+                plot_empenhos_simples(df_filtered)
 
-    # Segunda aba (Exploração)
+    with tab4:
+        st.write()
+        column_novo, column_mostrar_chat = run_chat(openai_api_key)
+        
+        conteiner_chat = st.container()
+        
+        if "atualizar_chat" not in st.session_state:
+            st.session_state.atualizar_chat = False
+        if "cont_chat" not in st.session_state:
+            st.session_state.cont_chat = 0
+        if "atualizar_chat" in st.session_state:
+            if st.session_state.atualizar_chat:
+                if st.session_state.atualizar_chat:
+                    cont = 0
+                    with conteiner_chat:
+                        for message in st.session_state.messages_backup:
+                            with st.chat_message(message["role"]):
+                                st.write(message["content"].replace("R$ ", "R\$ "))
+                            cont += 1
+                    st.session_state.cont_chat = cont
+                    st.session_state.atualizar_chat = False
+        with column_novo:
+            if st.button("Novo", use_container_width=True):
+                st.session_state.messages.clear()
+                st.session_state.messages_backup.clear()
+                st.session_state.cont_chat = 0
+                st.session_state.atualizar_chat = False
+        if not st.session_state.atualizar_chat or st.session_state.cont_chat != len(st.session_state.messages):
+            with column_mostrar_chat:
+                if st.button("Mostrar Chat Atualizado", use_container_width=True):
+                    st.session_state.atualizar_chat = True
+                    st.session_state.messages_backup = st.session_state.messages
+                    
+                    if "atualizar_chat" in st.session_state:
+                        if st.session_state.atualizar_chat:
+                            cont = 0
+                            with conteiner_chat:
+                                for message in st.session_state.messages_backup:
+                                    with st.chat_message(message["role"]):
+                                        st.write(message["content"].replace("R$ ", "R\$ "))
+                                    cont += 1
+                            st.session_state.cont_chat = cont
+                            st.session_state.atualizar_chat = False
+                    
     with tab2:
         st.write('Ainda não implementado.')
-    
+
     with tab3:
         st.write('Ainda não implementado.')
+    
+    if prompt := st.chat_input("🤖: O que você deseja consultar?", key="chat_input"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        response = response_generation(prompt, openai_api_key)
+        
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        st.toast(response, icon='🤖')
+    
+    # chart_bar_empenho_elemento(df_filtered)
+    
 
+
+def plot_empenhos_simples(df: pd.DataFrame):
+    """
+    Plota um gráfico de barras horizontais simples mostrando Valor Empenhado ou Quantidade de Empenhos
+    agrupados por Elemento_de_Despesa ou Subelemento, ordenados do maior para o menor.
     
+    Args:
+        df (pd.DataFrame): DataFrame contendo as colunas 'Elemento_de_Despesa', 'Subelemento', e 'Empenhado_float'.
+    """
     
+    # Exibe o DataFrame opcionalmente
+    # mostrar_dados = st.checkbox("Mostrar Dados")
+        # st.subheader("Dados de Empenhos")
+        # st.dataframe(df)
+
+    # Chama a função de plotagem
+    # Verifica se as colunas necessárias estão presentes
+      # st.write("")
+    st.write("")
+    st.write("")
+    required_columns = ['Elemento_de_Despesa', 'Subelemento', 'Empenhado_float', 'Data_datetime']
+    
+ 
+    for col in required_columns:
+        if col not in df.columns:
+            st.error(f"A coluna '{col}' está faltando no DataFrame.")
+            return
+
+    # Interface do Usuário com radio buttons
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        tipo_agregacao = st.radio(
+            "Visualizar por:",
+            ('Valor Empenhado', 'Quantidade de Empenhos'),
+            key='agregacao'
+        )
+    with col2:
+        tipo_agrupamento = st.radio(
+            "Agrupar por:",
+            ('Elemento de Despesa', 'Subelemento de Despesa'),
+            key='agrupamento'
+        )
+        titulo_grafico = tipo_agrupamento
+        if tipo_agrupamento == 'Elemento de Despesa':
+            tipo_agrupamento = 'Elemento_de_Despesa'
+        else:
+            tipo_agrupamento = 'Subelemento'
+            # Elemento de Despesa', 'Subelemento de Despesa
+    
+    with col3:
+        # Seleção do agrupamento
+        Ordenacao = st.radio(
+            "Ordenarção:",
+            ('Crescente', 'Decrescente'),
+            key='ordenacao',
+            index=1
+        )
+        if Ordenacao == 'Crescente':
+            ordenacao_value = True
+            total_descending_ascending = 'total descending'
+        else:
+            ordenacao_value = False
+            total_descending_ascending = 'total ascending'
+    # st.write("")
+    # st.write("")
+    # st.write("")
+    with col4:
+        mostrar_registros = st.selectbox('Mostrar X primeiros registros', ['Todos',5, 10, 15, 20, 25, 30, 35, 40, 45, 50], index=3)
+    # Agregação dos dados
+    if tipo_agregacao == 'Valor Empenhado':
+        df_agg = df.groupby(tipo_agrupamento)['Empenhado_float'].sum().reset_index()
+        y_label = 'Valor Empenhado (R$)'
+        y_data = 'Empenhado_float'
+    else:
+        df_agg = df.groupby(tipo_agrupamento).size().reset_index(name='Quantidade')
+        y_label = 'Quantidade de Empenhos'
+        y_data = 'Quantidade'
+
+    # Ordena os dados do maior para o menor
+    df_agg = df_agg.sort_values(by=y_data, ascending=ordenacao_value)  # Para barras horizontais, 'ascending=True' ordena do maior no topo
+    
+    # Filtra os X primeiros
+    if mostrar_registros != 'Todos':
+        df_agg = df_agg.head(mostrar_registros)
+        
+    with st.expander("Registros", expanded=False):
+        df_agg_show = df_agg.copy()
+        
+        # confirma se há a coluna 'Empenhado_float' no DataFrame    
+        mkd_text(f"Quantidade de registros: {df_agg.shape[0]}", level='h5')
+        if 'Empenhado_float' in df_agg_show.columns:
+            # Formata coluna Empenhado_float para ter duas casas : 0.00
+            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].astype(float).apply(lambda x: f'R$ {x:,.2f}')
+            # Descobre qual a maior quantidade de caracteres em Empenhado_float
+            max_len = df_agg_show['Empenhado_float'].str.len().max()
+            # Deixa todos os valores da coluna Empenhado_float com mesma quantidade de caracteres, inserindo espaço em branco a esquerda
+            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].apply(lambda x: x.rjust(max_len, '_'))
+        if tipo_agrupamento == 'Elemento_de_Despesa':
+            st.dataframe(df_agg_show.rename(columns={'Elemento_de_Despesa': 'Elemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
+        else:
+            st.dataframe(df_agg_show.rename(columns={'Subelemento': 'Subelemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
+    # st.write("")
+    st.write("")
+    st.write("")
+    mkd_text(f"{tipo_agregacao} por {titulo_grafico} ({Ordenacao})", level='subheader', position='center')
+    st.write("")
+    st.write("")
+    # Define labels e títulos
+    label_y = tipo_agrupamento.replace('_', ' ')
+    ano_menor = df['Data_datetime'].dt.year.min()
+    ano_maior = df['Data_datetime'].dt.year.max()
+    titulo = f"{tipo_agregacao} por {label_y} ({ano_menor} - {ano_maior})"
+
+    # Cria o gráfico de barras horizontais
+    fig = px.bar(
+        df_agg,
+        x=y_data,
+        y=tipo_agrupamento,
+        orientation='h',
+        labels={
+            tipo_agrupamento: label_y,
+            y_data: y_label
+        },
+        text=y_data,
+        color=tipo_agrupamento,
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+
+    # Atualiza o layout para melhor visualização
+    fig.update_layout(
+        xaxis=dict(type='linear'),
+        xaxis_title=y_label,
+        yaxis_title=label_y,
+        title=titulo,
+        uniformtext_minsize=8,
+        uniformtext_mode='hide',
+        yaxis={'categoryorder': total_descending_ascending},  # Ordena do maior para o menor
+        margin=dict(l=150, r=30, t=50, b=50),  # Ajusta as margens para acomodar os rótulos
+        height=800  # Altura do gráfico, pode ajustar conforme necessário
+    )
+
+    # Ajusta a posição do texto e a formatação
+    fig.update_traces(
+        textposition='inside',
+        texttemplate='%{text:.2s}',
+        textfont=dict(color='#ffffff'),
+        marker_color='#0000ff'  # Define a cor das barras como azul
+    )
+
+    # Remove a legenda, pois as barras já representam as categorias
+    fig.update_layout(showlegend=False)
+
+    # Exibe o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True, height=800)
+
+
+
+
+
     
 if __name__ == "__main__":
     run()
 
-def visualizacoes(df: pd.DataFrame):
+def mostra_contagem_quantitativo_empenho(df: pd.DataFrame):
     min_year = df['Data_datetime'].dt.year.min()
     max_year = df['Data_datetime'].dt.year.max()
     
@@ -820,72 +1363,35 @@ def visualizacoes(df: pd.DataFrame):
         tipo_periodo = st.radio("Período:", ['Mês (Acumulado)', 'Mês', 'Bimestre', 'Trimestre', 'Quadrimestre', 'Ano'])
 
     if tipo_visualizacao == 'Contagem':
+        titulo = 'Quantidade de Empenhos'
         agg_func = 'count'
         currency_symbol = ''
     else:
+        titulo = 'Valor Empenhado'
         agg_func = 'sum'
         currency_symbol = 'R$'
     
     if tipo_periodo == 'Mês (Acumulado)':
-        mkd_text("Valor Empenhado por Mês (Acumulado)", level='subheader', position='center')
+        mkd_text(f"{titulo} por Mês (Acumulado)", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'mes (acumulado)', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
     elif tipo_periodo == 'Mês':
-        mkd_text("Valor Empenhado por Mês", level='subheader', position='center')
+        mkd_text(f"{titulo} por Mês", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol=currency_symbol, month_names=month_names, agg_func=agg_func)
     elif tipo_periodo == 'Ano':
-        mkd_text("Valor Empenhado por Ano", level='subheader', position='center')
+        mkd_text(f"{titulo} por Ano", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
     elif tipo_periodo == 'Quadrimestre':
-        mkd_text("Valor Empenhado por Quadrimestre", level='subheader', position='center')
+        mkd_text(f"{titulo} por Quadrimestre", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
     elif tipo_periodo == 'Trimestre':
-        mkd_text("Valor Empenhado por Trimestre", level='subheader', position='center')
+        mkd_text(f"{titulo} por Trimestre", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
     elif tipo_periodo == 'Bimestre':
-        mkd_text("Valor Empenhado por Bimestre", level='subheader', position='center')
+        mkd_text(f"{titulo} por Bimestre", level='subheader', position='center')
         chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol=currency_symbol, agg_func=agg_func)
-        
-    # # Plotagem por Mês - Valor Empenhado
-    # mkd_text("Valor Empenhado por Mês", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol='R$', month_names=month_names, agg_func='sum')
-    
-    # # Plotagem por Mês - Quantidade de Empenhos
-    # mkd_text("Quantidade de Empenhos por Mês", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'mes', min_year, max_year, currency_symbol='', month_names=month_names, agg_func='count')
-    
-    # # Plotagem por Ano - Valor Empenhado
-    # mkd_text("Valor Empenhado por Ano", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol='R$', agg_func='sum')
-    
-    # # Plotagem por Ano - Quantidade de Empenhos (Opcional)
-    # mkd_text("Quantidade de Empenhos por Ano", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'ano', min_year, max_year, currency_symbol='', agg_func='count')
-    
-    # # Plotagem por Quadrimestre - Valor Empenhado
-    # mkd_text("Valor Empenhado por Quadrimestre", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol='R$', agg_func='sum')
-    
-    # # Plotagem por Quadrimestre - Quantidade de Empenhos (Opcional)
-    # mkd_text("Quantidade de Empenhos por Quadrimestre", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'quadrimestre', min_year, max_year, currency_symbol='', agg_func='count')
-    
-    # # Plotagem por Trimestre - Valor Empenhado
-    # mkd_text("Valor Empenhado por Trimestre", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol='R$', agg_func='sum')
-    
-    # # Plotagem por Trimestre - Quantidade de Empenhos (Opcional)
-    # mkd_text("Quantidade de Empenhos por Trimestre", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'trimestre', min_year, max_year, currency_symbol='', agg_func='count')
-    
-    # # Plotagem por Bimestre - Valor Empenhado
-    # mkd_text("Valor Empenhado por Bimestre", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol='R$', agg_func='sum')
-    
-    # # Plotagem por Bimestre - Quantidade de Empenhos (Opcional)
-    # mkd_text("Quantidade de Empenhos por Bimestre", level='subheader', position='center')
-    # chart_bar_empenho_periodo(df, 'bimestre', min_year, max_year, currency_symbol='', agg_func='count')
 
 
+# Função para criar gráfico de barras
 def chart_bar_empenho_periodo(df_filtered: pd.DataFrame, periodo: str, min_year: int, max_year: int, 
                               currency_symbol: str = 'R$', month_names: list = None, 
                               agg_func: str = 'sum'):

@@ -21,3 +21,8 @@ motor
 plotly
 babel
 kaleido
+openai
+langchain-openai
+langchain
+langchain_community
+pyowm
