@@ -163,9 +163,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-app_chat_langchain.py
-app_chat.py
-app.chat_embbedded.py
-app.chat_langchain_openai.py
-testes.py
-app_copy.py
+# app_chat_langchain.py
+# app_chat.py
+# app.chat_embbedded.py
+# app.chat_langchain_openai.py
+# testes.py
+# app_copy.py
