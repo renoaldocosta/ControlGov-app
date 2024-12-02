@@ -6,6 +6,13 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
 
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
+
+
 # Configuração da página com título e favicon
 st.set_page_config(
     page_title="ControlGov",
