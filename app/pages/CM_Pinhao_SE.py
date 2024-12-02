@@ -23,6 +23,7 @@ from app.model.agent import load_agent, StreamlitCallbackHandler, StreamlitChatM
 load_dotenv()
 
 
+
 # Dicionário para traduzir números de mês para nomes de mês em português
 MONTH_TRANSLATION = {
     1: "Janeiro",
@@ -787,18 +788,17 @@ def display_data(df):
     )
 
 
-def initialize_chat_sessiona_states():
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if 'chat_messages' not in st.session_state:
-        st.session_state.chat_messages = []
+    
 
 
 def run():
     """
     Função principal para executar o aplicativo Streamlit.
     """
-    initialize_chat_sessiona_states()
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if 'chat_messages' not in st.session_state:
+        st.session_state.chat_messages = []
     
     if prompt := st.chat_input("🤖: O que você deseja consultar?", key="chat_input"):
         st.session_state.chat_messages.append({"role": "user", "content": prompt})
@@ -859,13 +859,17 @@ def run():
         
         with column_novo:
             if st.button("Novo", use_container_width=True):
+                if "messages" not in st.session_state:
+                    st.session_state.messages = []
+                if 'chat_messages' not in st.session_state:
+                    st.session_state.chat_messages = []
                 st.session_state.messages = []
                 st.session_state.chat_messages = []
                 msg = StreamlitChatMessageHistory()
                 st.session_state.memory = ConversationBufferMemory(
                         messages=msg, memory_key="chat_history", return_messages=True
                     )
-                initialize_chat_sessiona_states()
+                
 
         with column_mostrar_chat:
             if st.button("Mostrar Histórico das Conversas", use_container_width=True):
