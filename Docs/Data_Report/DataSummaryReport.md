@@ -51,8 +51,69 @@ A qualidade dos dados coletados foi consistente entre as diferentes fontes. Não
 - **Coleta via Web Scraping:** Os dados foram extraídos de portais de transparência municipais utilizando Selenium e armazenados em um banco de dados NoSQL (MongoDB). Esses dados estavam em formato bruto e precisaram ser organizados para análise.
 - **Coleta de Arquivos CSV/JSON:** Os dados foram baixados manualmente do site do Tribunal de Contas dos Municípios da Bahia (TCM/BA). Esses arquivos foram transformados e carregados em *dataframes* para serem manipulados de forma mais eficiente.
 - **Automação das Transformações:** Utilização de Pydantic com FastAPI para definir o formato dos dados requisitados junto ao Streamlit, garantindo a integridade e consistência dos dados processados.
+- **Integração de APIs e Chatbot com IA:**
+  - **APIs Desenvolvidas com FastAPI:** Facilitam a consulta e inserção de dados no MongoDB, permitindo a integração contínua dos dados coletados via web scraping e fontes externas.
+  - **Chatbot com IA:** Utiliza Langchain e OpenAI para responder consultas sobre a Câmara Municipal de Pinhão, acessando informações detalhadas através de um banco de dados vetorial de embeddings.
 
 Essa abordagem dupla permitiu maior flexibilidade na coleta e transformação dos dados, garantindo que eles estivessem em um formato adequado para cada análise, em cada um dos módulos.
+
+---
+
+## Integração e Utilização de Dados Coletados via APIs e Web Scraping
+
+### Integração de Dados
+
+1. **APIs Desenvolvidas com FastAPI:**
+   - **Descrição:** APIs criadas com FastAPI para facilitar a consulta e inserção de dados no banco de dados MongoDB.
+   - **Função:** Permitem a integração contínua e automática dos dados coletados via web scraping e fontes externas, garantindo que as informações estejam sempre atualizadas e disponíveis para análise.
+   - **Utilização no Projeto:**
+     - **Coleta Automática de Dados:** O scraper desenvolvido com BeautifulSoup coleta dados diariamente e envia para o banco de dados MongoDB através das APIs.
+     - **Consulta de Dados pelo Chatbot:** A API de embeddings baseada em um banco de dados vetorial permite que o chatbot acesse informações detalhadas sobre a Câmara Municipal de Pinhão, incluindo elementos de despesa, valores empenhados e consultas a CPF/CNPJ dos credores.
+
+2. **Web Scraping com BeautifulSoup e Selenium:**
+   - **Descrição:** Técnicas de web scraping utilizadas para extrair dados dos Portais de Transparência Municipais.
+   - **Função:** Coletar dados diariamente e armazená-los em uma base de dados intermediária antes de migrá-los para o banco de dados final no MongoDB.
+   - **Utilização no Projeto:**
+     - **Atualização Diária:** Garantir que os dados financeiros estejam sempre atualizados para análises em tempo real.
+     - **Monitoramento de Saúde dos Sites:** Implementação de monitoramento da disponibilidade e saúde dos portais via Scrapy, com visualização em gráficos.
+
+### Uso de Dados no Projeto
+
+1. **Análise e Detecção de Anomalias:**
+   - **Descrição:** Utilização dos dados coletados para identificar outliers e anomalias nas transações financeiras.
+   - **Ferramentas Utilizadas:** Modelos de aprendizado de máquina desenvolvidos com scikit-learn e TensorFlow.
+   - **Objetivo:** Melhorar a detecção de desvios e fraudes nas despesas públicas.
+
+2. **Chatbot com IA para Consultas de Dados:**
+   - **Descrição:** Implementação de um chatbot utilizando Langchain e OpenAI para responder consultas sobre a Câmara Municipal de Pinhão.
+   - **Funcionalidades:**
+     - **Consultas Diretas no Chat:** Permite aos usuários perguntar sobre elementos e subelementos de despesa, valores empenhados a pessoas físicas e jurídicas, e consultas a CPF/CNPJ dos credores.
+     - **Integração com Dashboard:** Os usuários podem filtrar informações diretamente no dashboard, utilizando a API de embeddings para obter respostas rápidas e precisas.
+   - **Armazenamento de Memória:** A memória do chatbot é armazenada na sessão, garantindo que as interações sejam contextualmente relevantes.
+   - **Notificações e Respostas:** As respostas do chatbot são exibidas em espaços reservados e notificações na página correspondente à Câmara de Pinhão.
+
+3. **Banco de Dados Vetorial para Embeddings:**
+   - **Descrição:** Utilização de um banco de dados vetorial para armazenar embeddings gerados a partir dos dados financeiros.
+   - **Função:** Facilitar a busca semântica e a recuperação eficiente de informações relevantes para o chatbot.
+   - **Ferramentas Utilizadas:** Langchain e OpenAI para gerar e gerenciar embeddings.
+
+### Fluxo de Integração de Dados
+
+1. **Coleta de Dados:**
+   - Web scraping diário dos Portais de Transparência Municipais via Selenium e BeautifulSoup.
+   - Importação mensal de dados financeiros em formato JSON/CSV do Tribunal de Contas dos Municípios da Bahia.
+   - Extração diária de dados dos sistemas internos de contabilidade.
+
+2. **Processamento e Armazenamento:**
+   - Transformação e limpeza dos dados utilizando pandas.
+   - Armazenamento dos dados limpos no banco de dados MongoDB através das APIs desenvolvidas com FastAPI.
+
+3. **Análise e Visualização:**
+   - Utilização de Streamlit para construir dashboards interativos.
+   - Integração do chatbot para consultas avançadas e notificações.
+
+4. **Detecção de Anomalias:**
+   - Aplicação de modelos de machine learning para identificar padrões suspeitos e outliers.
 
 ---
 
@@ -117,33 +178,5 @@ As informações coletadas e analisadas até agora permitem uma visão ampla sob
 - **Integração de FastAPI:** APIs desenvolvidas para facilitar a consulta e inserção de dados no MongoDB, melhorando a dinamização e simplicidade das aplicações.
 - **Automação com Scraper:** Implementação de um scraper com BeautifulSoup para coleta diária de dados, armazenados inicialmente em uma base de stage antes da migração para o banco de dados final.
 - **Planejamento de Integrações Futuras:** Consideração da integração com WhatsApp para notificações e uso de Scrapy para monitoramento de disponibilidade de sites, além da inclusão de LLMs para geração de relatórios e análises avançadas.
+- **Chatbot com IA:** Criação de um chatbot utilizando Langchain e OpenAI para responder consultas sobre a Câmara Municipal de Pinhão, facilitando o acesso a informações detalhadas via chat ou dashboard.
 
----
-
-## Próximos Passos
-
-
-1. **Implementar Medidas de Segurança:**
-   - **Adicionar autenticação e autorização** às APIs desenvolvidas com FastAPI para proteger as operações de inserção, atualização e deleção de dados no MongoDB.
-
-2. **Documentação e Treinamento:**
-   - **Criar materiais de treinamento** para ensinar os usuários finais a interagir com as novas funcionalidades de LLMs.
-   - **Gravar vídeos tutoriais** para auxiliar os usuários no download e upload de dados.
-
-3. **Monitoramento e Feedback:**
-   - **Estabelecer mecanismos de coleta de feedback** através de pesquisas ou formulários.
-   - **Realizar reuniões mensais** para revisar feedbacks e iterar sobre as funcionalidades existentes.
-
-### Próximos Passos:
-
-1. **Implementar Medidas de Segurança:**
-   - Adicionar autenticação às APIs com FastAPI para garantir a segurança dos dados.
-   
-2. **Desenvolver e Integrar LLMs:**
-   - Iniciar a integração de LLMs utilizando Langchain para funcionalidades avançadas como geração de relatórios automáticos e sistemas de Q&A.
-   
-3. **Treinamento e Capacitação:**
-   - Desenvolver e disponibilizar materiais de treinamento para a equipe técnica e usuários finais.
-
-4. **Monitoramento Contínuo:**
-   - Estabelecer rotinas de monitoramento para garantir a qualidade dos dados e a performance das novas funcionalidades.
