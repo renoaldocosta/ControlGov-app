@@ -6,6 +6,13 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from app.services.text_functions import mkd_text_divider, mkd_text, mkd_paragraph
 
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
+
+
 # Configuração da página com título e favicon
 st.set_page_config(
     page_title="ControlGov",
@@ -33,7 +40,8 @@ sys.path.append(pages_dir)
 
 def show_banner():
     """Função para exibir a imagem do banner."""
-    st.image("./app/data/images/Banner_1000_300_Azul_shaped.svg", use_container_width=True)
+    # st.image("./app/data/images/Banner_1000_300_Azul_shaped.svg", use_container_width=True)
+    st.image("./app/data/images/Banner_1000_300_Azul_shaped.svg", use_column_width=True)
 
 def load_css():
     """Função para injetar CSS para ocultar elementos e definir estilos."""

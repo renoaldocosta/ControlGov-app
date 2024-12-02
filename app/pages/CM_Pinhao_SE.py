@@ -1,5 +1,7 @@
 import os
 import time
+from datetime import date
+
 import requests
 import json
 import pandas as pd
@@ -13,302 +15,20 @@ import plotly.express as px
 from app.services.text_functions import mkd_text, mkd_text_divider
 import plotly.io as pio
 
+import google.generativeai as genai
+
+from app.model.agent import load_agent, StreamlitCallbackHandler, StreamlitChatMessageHistory, ConversationBufferMemory
 # LangChain Core
 # from langchain_core.output_parsers import StrOutputParser
 # from langchain_core.prompts import ChatPromptTemplate
 
-# LangChain
-from langchain import LLMChain, OpenAI
-from langchain.agents import AgentExecutor, Tool, ConversationalAgent
-from langchain.memory import ConversationBufferMemory
-from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
-# from langchain.utilities import GoogleSerperAPIWrapper, OpenWeatherMapAPIWrapper
-
-# LangChain Community
-from langchain_community.chat_models import ChatOpenAI
-# from langchain_community.llms import OpenAI
-
-# LangChain OpenAI
-from langchain_openai.chat_models import ChatOpenAI
-
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
 
 load_dotenv()
 
-secret = os.getenv("API_SECRET")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-
-# Função que consulta a API do ControlGov para obter informações sobre CPF ou CNPJ
-def consultar_cpf_cnpj(query: str) -> str:
-    import requests
-
-    url = "https://api.controlgov.org/embeddings/subelementos"
-    payload = {
-        "query": query,
-        "secret": secret,  
-    }
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
-
-    response = requests.post(url, json=payload, headers=headers, timeout=10)
-
-    if response.status_code == 200:
-        data = response.json()
-        return data.get("resposta", "Nenhuma resposta encontrada.")
-    else:
-        return f"Erro ao consultar a API: {response.status_code}"
-
-
-# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
-def consultar_PessoaFisica_PessoaJuridica(query: str) -> str:
-    import requests
-
-    url = "https://api.controlgov.org/embeddings/subelementos"
-    payload = {
-        "query": query,
-        "secret": secret,  
-    }
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
-
-    response = requests.post(url, json=payload, headers=headers, timeout=10)
-
-    if response.status_code == 200:
-        data = response.json()
-        return data.get("resposta", "Nenhuma resposta encontrada.")
-    else:
-        return f"Erro ao consultar a API: {response.status_code}"
-
-
-# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
-def consultar_subelementos(query: str) -> str:
-    import requests
-
-    url = "https://api.controlgov.org/embeddings/subelementos"
-    payload = {
-        "query": query,
-        "secret": secret,  # É recomendável armazenar o secret em uma variável de ambiente
-    }
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
-
-    response = requests.post(url, json=payload, headers=headers, timeout=10)
-
-    if response.status_code == 200:
-        data = response.json()
-        data["resposta"] = data["resposta"] + "\nFormatar valores em R$"
-        return data.get("resposta", "Nenhuma resposta encontrada.")
-    else:
-        return f"Erro ao consultar a API: {response.status_code}"
-
-
-# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
-def consultar_empenhado_sum(query=None):
-    url = "https://api.controlgov.org/elementos/despesa/empenhado-sum/"
-    headers = {"accept": "application/json"}
-
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-        elementos = data.get("elementos", [])
-        if not elementos:
-            return "Nenhum dado encontrado."
-
-        resultado = "Soma dos Valores Empenhados por Elemento de Despesa:\n\n"
-        for elemento in elementos:
-            elemento_despesa = elemento.get("elemento_de_despesa", "Desconhecido")
-            total_empenhado = elemento.get("total_empenhado", 0)
-            resultado += f"• {elemento_despesa}: R\$ {total_empenhado:,.2f}\n"
-
-        return resultado
-
-    except requests.exceptions.RequestException as e:
-        return f"Ocorreu um erro ao consultar a API: {e}"
-    except ValueError:
-        return "Erro ao processar a resposta da API."
-
-
-# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
-def listar_empenhos_por_elemento(query=None):
-    url = "https://api.controlgov.org/elementos/despesa/empenhado-sum/"
-    headers = {"accept": "application/json"}
-
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-        elementos = data.get("elementos", [])
-        if not elementos:
-            return "Nenhum dado encontrado."
-
-        # Se uma consulta específica for fornecida, filtrar os elementos
-        if query:
-            elementos = [
-                elem
-                for elem in elementos
-                if query.lower() in elem.get("elemento_de_despesa", "").lower()
-            ]
-            if not elementos:
-                return (
-                    f"Nenhum empenho encontrado para o elemento de despesa: '{query}'."
-                )
-
-        resultado = "Empenhos por Elemento de Despesa:\n\n"
-        for elemento in elementos:
-            elemento_despesa = elemento.get("elemento_de_despesa", "Desconhecido")
-            total_empenhado = elemento.get("total_empenhado", 0)
-            resultado += f"• {elemento_despesa}: R\$ {total_empenhado:,.2f}\n"
-
-        return resultado
-
-    except requests.exceptions.RequestException as e:
-        return f"Ocorreu um erro ao consultar a API: {e}"
-    except ValueError:
-        return "Erro ao processar a resposta da API."
-
-
-# Função que consulta a API do ControlGov para obter informações sobre subelementos financeiros
-def generate_response_agent(text):
-    # Consultar CPF ou CNPJ
-    text = "Me responda apenas:\n" + text
-    consultar_cpf_cnpj_tool = Tool(
-        name="Consultar CPF ou CNPJ",
-        func=consultar_cpf_cnpj,
-        description=(
-            "Use esta ferramenta para obter informações sobre CPF ou CNPJ de um credor."
-            "Por exemplo, você pode perguntar: 'Qual o CPF do credor <nome> com asteriscos?' ou 'Qual o CNPJ do credor <nome>?'"
-        ),
-    )
-
-    # Definir as ferramentas
-    subelementos_tool = Tool(
-        name="Consultar Subelemento Individualmente",
-        func=consultar_subelementos,
-        description=(
-            "Use esta ferramenta para obter informações sobre alguns subelementos financeiros. "
-            "Por exemplo, você pode perguntar: 'Qual o total empenhado para o subelmento <subelemento>?'"
-        ),
-    )
-
-    empenho_pessoa_fisica_juridica = Tool(
-        name="Consultar Empenho a Pessoa Física ou Jurídica",
-        func=consultar_PessoaFisica_PessoaJuridica,
-        description=(
-            "Use esta ferramenta para obter informações sobre valores empenhados para Pessoa Física ou Pessoa Jurídica. "
-            "Por exemplo, você pode perguntar: 'Qual o total empenhado para <Pessoa Física>?' ou 'Qual o total empenhado para <Pessoa Jurídica>?'"
-        ),
-    )
-
-    empenhos_por_elemento_tool = Tool(
-        name="Consultar Todos os Elementos de uma Vez",
-        func=listar_empenhos_por_elemento,
-        description=(
-            "Use esta ferramenta para obter a lista de empenhos por elemento de despesa. "
-            "Por exemplo, você pode perguntar: 'Quais são os empenhos para o elemento de despesa por Obrigação Patronal?' "
-        ),
-    )
-
-    tools = [
-        subelementos_tool,
-        # empenhado_sum_tool,
-        empenhos_por_elemento_tool,
-        empenho_pessoa_fisica_juridica,
-        consultar_cpf_cnpj_tool,
-        # categoria_tool  # Adiciona a nova ferramenta aqui
-    ]
-
-    prefix = """Você é um assistente direto e especializado em finanças governamentais.
-    Você pode ajudar os usuários a consultar informações sobre:
-    - elementos e subelementos de despesa, 
-    - consultas aos valores empenhados a Pessoas Físicas e Jurídicas.
-    - consultas a CPF ou CNPJ dos credores.
-    
-    Você tem acesso às seguintes ferramentas:
-    
-    - Consultar Empenho a Pessoa Física ou Jurídica: Use esta ferramenta para obter informações sobre valores empenhados para PF ou PJ.
-    - Consultar CPF ou CNPJ: Use esta ferramenta para obter informações sobre CPF ou CNPJ dos credores.
-    - Consultar Subelemento Individualmente: Use esta ferramenta para obter informações sobre valores empenhados por subelementos de despesa.
-    - Consultar Todos os Elementos de uma Vez: Use esta ferramenta para obter a lista de valores empenhados por elemento de despesa.
-    
-    """
-    # - Consultar Empenhado Sum: Use esta ferramenta para obter a soma de todos os valores empenhados para cada elemento de despesa.
-
-    suffix = """
-    Histórico do Chat:
-    {chat_history}
-    Última Pergunta: {input}
-    {agent_scratchpad}
-    Sempre responda em Português.
-    Responda apenas ao que foi perguntado. Evite informações desnecessárias.
-    """
-
-    # Atualizar o prefixo do prompt para incluir a nova ferramenta
-    prompt = ConversationalAgent.create_prompt(
-        tools,
-        prefix=prefix,
-        suffix=suffix,
-        input_variables=["input", "chat_history", "agent_scratchpad"],
-    )
-
-    # Configurar a memória
-    msg = StreamlitChatMessageHistory()
-
-    if "memory" not in st.session_state:
-        st.session_state.memory = ConversationBufferMemory(
-            messages=msg, memory_key="chat_history", return_messages=True
-        )
-    memory = st.session_state.memory
-
-    # Configurar o LLM
-    llm_chain = LLMChain(
-        llm=ChatOpenAI(temperature=0.5, model_name="gpt-4o-mini"),
-        prompt=prompt,
-        verbose=True,
-    )
-
-    # Configurar o agente
-    agent = ConversationalAgent(
-        llm_chain=llm_chain,
-        memory=memory,
-        verbose=True,
-        max_interactions=3,
-        tools=tools,
-    )
-
-    agent_executor = AgentExecutor.from_agent_and_tools(
-        agent=agent, tools=tools, memory=memory, verbose=True
-    )
-
-    # Executar o agente
-    if text:
-        result = agent_executor.run(text)
-        return result if "não consegui identificar" not in result.lower() else result
-
-
-# Função que gera a resposta do agente de atendimento
-def response_generation(text: str, openai_api_key):
-    # time.sleep(1)
-    with st.spinner("Estou pensando..."):
-        st.toast("Pensando!", icon="🤖")
-        response = (
-            generate_response_agent(text)
-            .replace("R$ ", "R\$ ")
-            .replace(".\n```", "")
-            .replace("*", "\*")
-        )
-
-    return response
-
-
-# Função que executa o chatbot
-def run_chat(openai_api_key: str):
-    mkd_text("🤖 Chatbot de Gerencial CMP/SE", level="subheader", position="center")
-    column_novo, column_mostrar_chat = st.columns([0.1, 0.9])
-    if "openai_model" not in st.session_state:
-        st.session_state.openai_model = "gpt-3.5-turbo"
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    return column_novo, column_mostrar_chat
 
 
 # Dicionário para traduzir números de mês para nomes de mês em português
@@ -658,7 +378,8 @@ def year_filter(df: pd.DataFrame) -> pd.DataFrame:
         "Ano",
         min_value=int(first_year),
         max_value=int(last_year),
-        value=(int(first_year), int(last_year))
+        value=(int(first_year), int(last_year)),
+        key='year_slider'
     )
 
     df_filtered = df[df['Data_datetime'].dt.year.between(*selected_years)]
@@ -1075,10 +796,24 @@ def display_data(df):
     )
 
 
+    
+
+
 def run():
     """
     Função principal para executar o aplicativo Streamlit.
     """
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    else:
+        while len(st.session_state.messages) > 10:
+            st.session_state.messages.pop(0)
+    if 'chat_messages' not in st.session_state:
+        st.session_state.chat_messages = []
+    
+    if prompt := st.chat_input("🤖: O que você deseja consultar?", key="chat_input"):
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        st.toast("Pensando...".strip(), icon="🤖")
     # Exibir o título
     mkd_text("Câmara Municipal de Pinhão - SE", level='title', position='center')
 
@@ -1116,232 +851,160 @@ def run():
                 mostra_contagem_quantitativo_empenho(df_filtered)
         with tab_classificacao_despesa:
             with st.container(border=1):
-                plot_empenhos_simples(df_filtered)
+                df_agg = plot_empenhos_simples(df_filtered)
+            with st.expander("Análise de Classificação da Despesa", expanded=False):
+                # st.dataframe(df_agg)
+                # st.write(df_agg.columns)
+                col1 = st.columns([0.4,0.2,0.4])
+                with col1[1]:
+                    analise = st.radio("Análise", ['Análise Padrão', 'Análise Personalizada'], key="tipo_analise")
+                if analise == 'Análise Personalizada':
+                    pergunta = st.text_area("**Escreva a pergunta para a análise personalizada:**",value="Qual a proporção dos empenhos realizados com obrigações patronais e as demais despesas de pessoal?",placeholder="Digite sua pergunta aqui...", key="pergunta", help="Escreva a pergunta que deseja responder com base nos dados fornecidos.")
+                    
+                    if st.button("Gerar Relatório Personalizado", key="gerar_analise",type="primary",use_container_width=True):
+                        csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
+                        today = date.today()
+                        prompt_agregation = f"""### Prompt para Análise de Elementos de Despesa
+                            Câmara de Pinhão/SE, {today.strftime("%d/%m/%Y")}
+                            Você é o analista financeiro especializado em despesas públicas da Câmara Municipal de Pinhão. Receberá uma tabela com duas colunas: **Elemento_de_Despesa** ou **Subelemento** (identificador e descrição do tipo de despesa) e **Empenhado_float** (valor total empenhado para cada elemento ou subelemento, em formato numérico). Receberá os seguintes dados no formato de tabela, contendo colunas **Elemento_de_Despesa** e **Empenhado_float**. Também receberá uma pergunta específica relacionada a esses dados.
 
-    with tab4:
-        st.write()
-        column_novo, column_mostrar_chat = run_chat(openai_api_key)
-        
-        conteiner_chat = st.container()
-        
-        if "atualizar_chat" not in st.session_state:
-            st.session_state.atualizar_chat = False
-        if "cont_chat" not in st.session_state:
-            st.session_state.cont_chat = 0
-        if "atualizar_chat" in st.session_state:
-            if st.session_state.atualizar_chat:
-                if st.session_state.atualizar_chat:
-                    cont = 0
-                    with conteiner_chat:
-                        for message in st.session_state.messages_backup:
-                            with st.chat_message(message["role"]):
-                                st.write(message["content"].replace("R$ ", "R\$ "))
-                            cont += 1
-                    st.session_state.cont_chat = cont
-                    st.session_state.atualizar_chat = False
-        with column_novo:
-            if st.button("Novo", use_container_width=True):
-                st.session_state.messages.clear()
-                st.session_state.messages_backup.clear()
-                st.session_state.cont_chat = 0
-                st.session_state.atualizar_chat = False
-        if not st.session_state.atualizar_chat or st.session_state.cont_chat != len(st.session_state.messages):
-            with column_mostrar_chat:
-                if st.button("Mostrar Chat Atualizado", use_container_width=True):
-                    st.session_state.atualizar_chat = True
-                    st.session_state.messages_backup = st.session_state.messages
-                    
-                    if "atualizar_chat" in st.session_state:
-                        if st.session_state.atualizar_chat:
-                            cont = 0
-                            with conteiner_chat:
-                                for message in st.session_state.messages_backup:
-                                    with st.chat_message(message["role"]):
-                                        st.write(message["content"].replace("R$ ", "R\$ "))
-                                    cont += 1
-                            st.session_state.cont_chat = cont
-                            st.session_state.atualizar_chat = False
-                    
+                            Sua tarefa é:
+                            1. Ler e interpretar os dados fornecidos.
+                            2. Responder à pergunta específica de forma precisa e objetiva, fornecendo cálculos, observações e justificativas quando necessário.
+                            3. Apresentar um relatório com os resultados de maneira clara, incluindo métricas e insights relevantes.
+                            
+                            # Dados Fornecidos:
+                            {csv_data}
+                            
+                            # Pergunta Específica:
+                            {pergunta}
+                            """
+                        # Definir a chave de API do Gemini (use a chave fornecida pela sua conta)
+                        genai.configure(api_key=os.environ["GEMINI_KEY"])
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        with st.spinner("Pensando..."):
+                            response = model.generate_content(prompt_agregation)
+                            st.write(response.text.replace("R$ ", "R\$ "))
+                if analise == 'Análise Padrão':
+                    if st.button("Gerar Análise Padrão", key="gerar_analise",type="primary",use_container_width=True):
+                        csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
+                        prompt_agregation = f"""### Prompt para Análise de Elementos de Despesa
+
+                        Você é o analista financeiro especializado em despesas públicas da Câmara Municipal de Pinhão. Receberá uma tabela com duas colunas: **Elemento_de_Despesa** (identificador e descrição do tipo de despesa) e **Empenhado_float** (valor total empenhado para cada elemento, em formato numérico). Sua tarefa é realizar as seguintes análises e responder:
+
+                        1. **Total Geral Empenhado**: Calcule a soma total de todos os valores da coluna **Empenhado_float**.
+                        2. **Elementos Mais e Menos Impactantes**:
+                        - Identifique o elemento com o maior valor empenhado.
+                        - Identifique o elemento com o menor valor empenhado.
+                        3. **Proporção dos Principais Gastos**:
+                        - Calcule o percentual do total que os dois maiores elementos representam.
+                        4. **Observações Relevantes**:
+                        - Faça uma observação sobre a concentração de valores. Existe uma grande disparidade entre os elementos? 
+                        - Sugira como priorizar elementos de maior impacto em uma análise orçamentária.
+
+                        ### Exemplo de Formato de Resposta
+
+                        Dados fornecidos:
+                        ```
+                        3190110000 - VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL    2881304.04
+                        3190130000 - OBRIGACOES PATRONAIS                      642580.51
+                        3390350000 - SERVICOS DE CONSULTORIA                  514500
+                        3390400000 - SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO     340698.44
+                        3390140000 - DIARIAS - CIVIL                          297440
+                        3390390000 - OUTROS SERV.TERCEIROS-PESSOA JURIDICA    230597.91
+                        3390300000 - MATERIAL DE CONSUMO                     98093.28
+                        3390360000 - OUTROS SERV.DE TERCEIROS-PESSOA FISICA  75152
+                        4490520000 - EQUIPAMENTOS E MATERIAL PERMANENTE       59744.9
+                        ```
+
+                        Resposta:
+                        1. **Total Geral Empenhado**: R$ 4.659.411,08
+                        2. **Elementos Mais e Menos Impactantes**:
+                        - Maior valor empenhado: 3190110000 - VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL (R$ 2.881.304,04)
+                        - Menor valor empenhado: 4490520000 - EQUIPAMENTOS E MATERIAL PERMANENTE (R$ 59.744,90)
+                        3. **Proporção dos Principais Gastos**:
+                        - Os dois maiores elementos representam 75,65% do total empenhado.
+                        4. **Observações Relevantes**:
+                        - Existe alta concentração de gastos em **VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL**, representando mais de 60% do total. Isso indica que a maior parte do orçamento está sendo destinada a despesas de pessoal.
+                        - Sugere-se priorizar o monitoramento dos maiores elementos de despesa, uma vez que representam a maior fatia do orçamento.
+
+                        # Dados Fornecidos:
+                        {csv_data}
+                        """
+                        # Definir a chave de API do Gemini (use a chave fornecida pela sua conta)
+                        genai.configure(api_key=os.environ["GEMINI_KEY"])
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        with st.spinner("Pensando..."):
+                            response = model.generate_content(prompt_agregation)
+                            st.write(response.text.replace("R$ ", "R\$ "))
+                
+    
     with tab2:
         st.write('Ainda não implementado.')
 
     with tab3:
         st.write('Ainda não implementado.')
-    
-    if prompt := st.chat_input("🤖: O que você deseja consultar?", key="chat_input"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
         
-        response = response_generation(prompt, openai_api_key)
+    with tab4:
+        st.write("Aqui você pode ver o histórico de conversas.")
+        column_novo, column_mostrar_chat = st.columns([0.1, 0.9])
+
+        conteiner_chat = st.container()
         
-        st.session_state.messages.append({"role": "assistant", "content": response})
         
-        st.toast(response, icon='🤖')
-    
-    # chart_bar_empenho_elemento(df_filtered)
-    
-
-
-def plot_empenhos_simples(df: pd.DataFrame):
-    """
-    Plota um gráfico de barras horizontais simples mostrando Valor Empenhado ou Quantidade de Empenhos
-    agrupados por Elemento_de_Despesa ou Subelemento, ordenados do maior para o menor.
-    
-    Args:
-        df (pd.DataFrame): DataFrame contendo as colunas 'Elemento_de_Despesa', 'Subelemento', e 'Empenhado_float'.
-    """
-    
-    # Exibe o DataFrame opcionalmente
-    # mostrar_dados = st.checkbox("Mostrar Dados")
-        # st.subheader("Dados de Empenhos")
-        # st.dataframe(df)
-
-    # Chama a função de plotagem
-    # Verifica se as colunas necessárias estão presentes
-      # st.write("")
-    st.write("")
-    st.write("")
-    required_columns = ['Elemento_de_Despesa', 'Subelemento', 'Empenhado_float', 'Data_datetime']
-    
- 
-    for col in required_columns:
-        if col not in df.columns:
-            st.error(f"A coluna '{col}' está faltando no DataFrame.")
-            return
-
-    # Interface do Usuário com radio buttons
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        tipo_agregacao = st.radio(
-            "Visualizar por:",
-            ('Valor Empenhado', 'Quantidade de Empenhos'),
-            key='agregacao'
-        )
-    with col2:
-        tipo_agrupamento = st.radio(
-            "Agrupar por:",
-            ('Elemento de Despesa', 'Subelemento de Despesa'),
-            key='agrupamento'
-        )
-        titulo_grafico = tipo_agrupamento
-        if tipo_agrupamento == 'Elemento de Despesa':
-            tipo_agrupamento = 'Elemento_de_Despesa'
-        else:
-            tipo_agrupamento = 'Subelemento'
-            # Elemento de Despesa', 'Subelemento de Despesa
-    
-    with col3:
-        # Seleção do agrupamento
-        Ordenacao = st.radio(
-            "Ordenarção:",
-            ('Crescente', 'Decrescente'),
-            key='ordenacao',
-            index=1
-        )
-        if Ordenacao == 'Crescente':
-            ordenacao_value = True
-            total_descending_ascending = 'total descending'
-        else:
-            ordenacao_value = False
-            total_descending_ascending = 'total ascending'
-    # st.write("")
-    # st.write("")
-    # st.write("")
-    with col4:
-        mostrar_registros = st.selectbox('Mostrar X primeiros registros', ['Todos',5, 10, 15, 20, 25, 30, 35, 40, 45, 50], index=3)
-    # Agregação dos dados
-    if tipo_agregacao == 'Valor Empenhado':
-        df_agg = df.groupby(tipo_agrupamento)['Empenhado_float'].sum().reset_index()
-        y_label = 'Valor Empenhado (R$)'
-        y_data = 'Empenhado_float'
-    else:
-        df_agg = df.groupby(tipo_agrupamento).size().reset_index(name='Quantidade')
-        y_label = 'Quantidade de Empenhos'
-        y_data = 'Quantidade'
-
-    # Ordena os dados do maior para o menor
-    df_agg = df_agg.sort_values(by=y_data, ascending=ordenacao_value)  # Para barras horizontais, 'ascending=True' ordena do maior no topo
-    
-    # Filtra os X primeiros
-    if mostrar_registros != 'Todos':
-        df_agg = df_agg.head(mostrar_registros)
         
-    with st.expander("Registros", expanded=False):
-        df_agg_show = df_agg.copy()
-        
-        # confirma se há a coluna 'Empenhado_float' no DataFrame    
-        mkd_text(f"Quantidade de registros: {df_agg.shape[0]}", level='h5')
-        if 'Empenhado_float' in df_agg_show.columns:
-            # Formata coluna Empenhado_float para ter duas casas : 0.00
-            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].astype(float).apply(lambda x: f'R$ {x:,.2f}')
-            # Descobre qual a maior quantidade de caracteres em Empenhado_float
-            max_len = df_agg_show['Empenhado_float'].str.len().max()
-            # Deixa todos os valores da coluna Empenhado_float com mesma quantidade de caracteres, inserindo espaço em branco a esquerda
-            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].apply(lambda x: x.rjust(max_len, '_'))
-        if tipo_agrupamento == 'Elemento_de_Despesa':
-            st.dataframe(df_agg_show.rename(columns={'Elemento_de_Despesa': 'Elemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
-        else:
-            st.dataframe(df_agg_show.rename(columns={'Subelemento': 'Subelemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
-    # st.write("")
-    st.write("")
-    st.write("")
-    mkd_text(f"{tipo_agregacao} por {titulo_grafico} ({Ordenacao})", level='subheader', position='center')
-    st.write("")
-    st.write("")
-    # Define labels e títulos
-    label_y = tipo_agrupamento.replace('_', ' ')
-    ano_menor = df['Data_datetime'].dt.year.min()
-    ano_maior = df['Data_datetime'].dt.year.max()
-    titulo = f"{tipo_agregacao} por {label_y} ({ano_menor} - {ano_maior})"
+        with column_novo:
+            if st.button("Novo", use_container_width=True):
+                if "messages" not in st.session_state:
+                    st.session_state.messages = []
+                if 'chat_messages' not in st.session_state:
+                    st.session_state.chat_messages = []
+                st.session_state.messages = []
+                st.session_state.chat_messages = []
+                msg = StreamlitChatMessageHistory()
+                st.session_state.memory = ConversationBufferMemory(
+                        messages=msg, memory_key="chat_history", return_messages=True
+                    )
+                
 
-    # Cria o gráfico de barras horizontais
-    fig = px.bar(
-        df_agg,
-        x=y_data,
-        y=tipo_agrupamento,
-        orientation='h',
-        labels={
-            tipo_agrupamento: label_y,
-            y_data: y_label
-        },
-        text=y_data,
-        color=tipo_agrupamento,
-        color_discrete_sequence=px.colors.qualitative.Pastel
-    )
+        with column_mostrar_chat:
+            if st.button("Mostrar Histórico das Conversas", use_container_width=True):
+                with conteiner_chat:
+                    for message in st.session_state.chat_messages:
+                        with st.chat_message(message["role"]):
+                            st.write(message["content"].replace("R$ ", "R\$ "))
+                            
+        # FAZ O STREAMLIT FICAR ATUALIZANDO O CHAT
+        if prompt:
+            with conteiner_chat:
+                for message in st.session_state.chat_messages:
+                    with st.chat_message(message["role"]):
+                        st.write(message["content"].replace("R$ ", "R\$ "))
 
-    # Atualiza o layout para melhor visualização
-    fig.update_layout(
-        xaxis=dict(type='linear'),
-        xaxis_title=y_label,
-        yaxis_title=label_y,
-        title=titulo,
-        uniformtext_minsize=8,
-        uniformtext_mode='hide',
-        yaxis={'categoryorder': total_descending_ascending},  # Ordena do maior para o menor
-        margin=dict(l=150, r=30, t=50, b=50),  # Ajusta as margens para acomodar os rótulos
-        height=800  # Altura do gráfico, pode ajustar conforme necessário
-    )
-
-    # Ajusta a posição do texto e a formatação
-    fig.update_traces(
-        textposition='inside',
-        texttemplate='%{text:.2s}',
-        textfont=dict(color='#ffffff'),
-        marker_color='#0000ff'  # Define a cor das barras como azul
-    )
-
-    # Remove a legenda, pois as barras já representam as categorias
-    fig.update_layout(showlegend=False)
-
-    # Exibe o gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True, height=800)
+            with st.chat_message("assistant"):
+                st_callback = StreamlitCallbackHandler(st.container())
+                agent_chain = load_agent(prompt)
+                response  = agent_chain.invoke(
+                    {"input": prompt},
+                    {"callbacks": [st_callback]},
+                )
+                response_output = (response["output"].
+                                replace("R$ ", "R\$ ")
+                                .replace(".\n```", "")
+                                .replace("```", "")
+                                .replace("*", "\*").strip())                
+                st.toast(response_output.replace("\n```",''), icon="🤖")
+                st.write(response_output)
+                st.session_state.chat_messages.append({"role": "assistant", "content": response_output})
 
 
-
-
-
-    
 if __name__ == "__main__":
+    if 'chat_messages' not in st.session_state:
+        st.session_state.chat_messages = []
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
     run()
+    
 
 def mostra_contagem_quantitativo_empenho(df: pd.DataFrame):
     min_year = df['Data_datetime'].dt.year.min()
@@ -1546,3 +1209,160 @@ def chart_bar_empenho_periodo(df_filtered: pd.DataFrame, periodo: str, min_year:
     #     file_name=f'empenhos_por_{periodo}.png',
     #     mime='image/png',
     # )
+
+
+
+def plot_empenhos_simples(df: pd.DataFrame):
+    """
+    Plota um gráfico de barras horizontais simples mostrando Valor Empenhado ou Quantidade de Empenhos
+    agrupados por Elemento_de_Despesa ou Subelemento, ordenados do maior para o menor.
+    
+    Args:
+        df (pd.DataFrame): DataFrame contendo as colunas 'Elemento_de_Despesa', 'Subelemento', e 'Empenhado_float'.
+    """
+    
+    # Exibe o DataFrame opcionalmente
+    # mostrar_dados = st.checkbox("Mostrar Dados")
+        # st.subheader("Dados de Empenhos")
+        # st.dataframe(df)
+
+    # Chama a função de plotagem
+    # Verifica se as colunas necessárias estão presentes
+      # st.write("")
+    st.write("")
+    st.write("")
+    required_columns = ['Elemento_de_Despesa', 'Subelemento', 'Empenhado_float', 'Data_datetime']
+    
+ 
+    for col in required_columns:
+        if col not in df.columns:
+            st.error(f"A coluna '{col}' está faltando no DataFrame.")
+            return
+
+    # Interface do Usuário com radio buttons
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        tipo_agregacao = st.radio(
+            "Visualizar por:",
+            ('Valor Empenhado', 'Quantidade de Empenhos'),
+            key='agregacao'
+        )
+    with col2:
+        tipo_agrupamento = st.radio(
+            "Agrupar por:",
+            ('Elemento de Despesa', 'Subelemento de Despesa'),
+            key='agrupamento'
+        )
+        titulo_grafico = tipo_agrupamento
+        if tipo_agrupamento == 'Elemento de Despesa':
+            tipo_agrupamento = 'Elemento_de_Despesa'
+        else:
+            tipo_agrupamento = 'Subelemento'
+            # Elemento de Despesa', 'Subelemento de Despesa
+    
+    with col3:
+        # Seleção do agrupamento
+        Ordenacao = st.radio(
+            "Ordenarção:",
+            ('Crescente', 'Decrescente'),
+            key='ordenacao',
+            index=1
+        )
+        if Ordenacao == 'Crescente':
+            ordenacao_value = True
+            total_descending_ascending = 'total descending'
+        else:
+            ordenacao_value = False
+            total_descending_ascending = 'total ascending'
+    # st.write("")
+    # st.write("")
+    # st.write("")
+    with col4:
+        mostrar_registros = st.selectbox('Mostrar X primeiros registros', ['Todos',5, 10, 15, 20, 25, 30, 35, 40, 45, 50], index=3)
+    # Agregação dos dados
+    if tipo_agregacao == 'Valor Empenhado':
+        df_agg = df.groupby(tipo_agrupamento)['Empenhado_float'].sum().reset_index()
+        y_label = 'Valor Empenhado (R$)'
+        y_data = 'Empenhado_float'
+    else:
+        df_agg = df.groupby(tipo_agrupamento).size().reset_index(name='Quantidade')
+        y_label = 'Quantidade de Empenhos'
+        y_data = 'Quantidade'
+
+    # Ordena os dados do maior para o menor
+    df_agg = df_agg.sort_values(by=y_data, ascending=ordenacao_value)  # Para barras horizontais, 'ascending=True' ordena do maior no topo
+    
+    # Filtra os X primeiros
+    if mostrar_registros != 'Todos':
+        df_agg = df_agg.head(mostrar_registros)
+        
+    with st.expander("Registros", expanded=False):
+        df_agg_show = df_agg.copy()
+        
+        # confirma se há a coluna 'Empenhado_float' no DataFrame    
+        mkd_text(f"Quantidade de registros: {df_agg.shape[0]}", level='h5')
+        if 'Empenhado_float' in df_agg_show.columns:
+            # Formata coluna Empenhado_float para ter duas casas : 0.00
+            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].astype(float).apply(lambda x: f'R$ {x:,.2f}')
+            # Descobre qual a maior quantidade de caracteres em Empenhado_float
+            max_len = df_agg_show['Empenhado_float'].str.len().max()
+            # Deixa todos os valores da coluna Empenhado_float com mesma quantidade de caracteres, inserindo espaço em branco a esquerda
+            df_agg_show['Empenhado_float'] = df_agg_show['Empenhado_float'].apply(lambda x: x.rjust(max_len, '_'))
+        if tipo_agrupamento == 'Elemento_de_Despesa':
+            st.dataframe(df_agg_show.rename(columns={'Elemento_de_Despesa': 'Elemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
+        else:
+            st.dataframe(df_agg_show.rename(columns={'Subelemento': 'Subelemento de Despesa', 'Empenhado_float': 'Valor Empenhado'}), use_container_width=True)
+    # st.write("")
+    st.write("")
+    st.write("")
+    mkd_text(f"{tipo_agregacao} por {titulo_grafico} ({Ordenacao})", level='subheader', position='center')
+    st.write("")
+    st.write("")
+    # Define labels e títulos
+    label_y = tipo_agrupamento.replace('_', ' ')
+    ano_menor = df['Data_datetime'].dt.year.min()
+    ano_maior = df['Data_datetime'].dt.year.max()
+    titulo = f"{tipo_agregacao} por {label_y} ({ano_menor} - {ano_maior})"
+
+    # Cria o gráfico de barras horizontais
+    fig = px.bar(
+        df_agg,
+        x=y_data,
+        y=tipo_agrupamento,
+        orientation='h',
+        labels={
+            tipo_agrupamento: label_y,
+            y_data: y_label
+        },
+        text=y_data,
+        color=tipo_agrupamento,
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+
+    # Atualiza o layout para melhor visualização
+    fig.update_layout(
+        xaxis=dict(type='linear'),
+        xaxis_title=y_label,
+        yaxis_title=label_y,
+        title=titulo,
+        uniformtext_minsize=8,
+        uniformtext_mode='hide',
+        yaxis={'categoryorder': total_descending_ascending},  # Ordena do maior para o menor
+        margin=dict(l=150, r=30, t=50, b=50),  # Ajusta as margens para acomodar os rótulos
+        height=800  # Altura do gráfico, pode ajustar conforme necessário
+    )
+
+    # Ajusta a posição do texto e a formatação
+    fig.update_traces(
+        textposition='inside',
+        texttemplate='%{text:.2s}',
+        textfont=dict(color='#ffffff'),
+        marker_color='#0000ff'  # Define a cor das barras como azul
+    )
+
+    # Remove a legenda, pois as barras já representam as categorias
+    fig.update_layout(showlegend=False)
+
+    # Exibe o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True, height=800)
+    return df_agg

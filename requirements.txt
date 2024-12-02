@@ -1,5 +1,5 @@
-streamlit
 pandas
+streamlit==1.39.0 
 streamlit-option-menu
 jupyter
 glob2
@@ -26,3 +26,4 @@ langchain-openai
 langchain
 langchain_community
 pyowm
+google-generativeai
