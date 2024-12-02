@@ -18,7 +18,10 @@ from app.model.agent import load_agent, StreamlitCallbackHandler, StreamlitChatM
 # from langchain_core.output_parsers import StrOutputParser
 # from langchain_core.prompts import ChatPromptTemplate
 
-
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
 
 load_dotenv()
 
