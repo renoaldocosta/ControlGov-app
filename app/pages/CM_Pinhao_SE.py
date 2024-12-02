@@ -851,7 +851,7 @@ def run():
         with tab_classificacao_despesa:
             with st.container(border=1):
                 df_agg = plot_empenhos_simples(df_filtered)
-            with st.expander("Análise de Classificação da Despesa", expanded=True):
+            with st.expander("Análise de Classificação da Despesa", expanded=False):
                 # st.dataframe(df_agg)
                 # st.write(df_agg.columns)
                 col1 = st.columns([0.4,0.2,0.4])
