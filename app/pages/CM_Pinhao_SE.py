@@ -1,5 +1,7 @@
 import os
 import time
+from datetime import date
+
 import requests
 import json
 import pandas as pd
@@ -12,6 +14,8 @@ from typing import Dict, Optional
 import plotly.express as px
 from app.services.text_functions import mkd_text, mkd_text_divider
 import plotly.io as pio
+
+import google.generativeai as genai
 
 from app.model.agent import load_agent, StreamlitCallbackHandler, StreamlitChatMessageHistory, ConversationBufferMemory
 # LangChain Core
@@ -800,6 +804,9 @@ def run():
     """
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    else:
+        while len(st.session_state.messages) > 10:
+            st.session_state.messages.pop(0)
     if 'chat_messages' not in st.session_state:
         st.session_state.chat_messages = []
     
@@ -843,7 +850,93 @@ def run():
                 mostra_contagem_quantitativo_empenho(df_filtered)
         with tab_classificacao_despesa:
             with st.container(border=1):
-                plot_empenhos_simples(df_filtered)
+                df_agg = plot_empenhos_simples(df_filtered)
+            with st.expander("Análise de Classificação da Despesa", expanded=True):
+                # st.dataframe(df_agg)
+                # st.write(df_agg.columns)
+                col1 = st.columns([0.4,0.2,0.4])
+                with col1[1]:
+                    analise = st.radio("Análise", ['Análise Padrão', 'Análise Personalizada'], key="tipo_analise")
+                if analise == 'Análise Personalizada':
+                    pergunta = st.text_area("**Escreva a pergunta para a análise personalizada:**",value="Qual a proporção dos empenhos realizados com obrigações patrimoniais e as demais despesas de pessoal?",placeholder="Digite sua pergunta aqui...", key="pergunta", help="Escreva a pergunta que deseja responder com base nos dados fornecidos.")
+                    
+                    if st.button("Gerar Relatório Personalizado", key="gerar_analise",type="primary",use_container_width=True):
+                        csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
+                        today = date.today()
+                        prompt_agregation = f"""### Prompt para Análise de Elementos de Despesa
+                            Câmara de Pinhão/SE, {today.strftime("%d/%m/%Y")}
+                            Você é o analista financeiro especializado em despesas públicas da Câmara Municipal de Pinhão. Receberá uma tabela com duas colunas: **Elemento_de_Despesa** ou **Subelemento** (identificador e descrição do tipo de despesa) e **Empenhado_float** (valor total empenhado para cada elemento ou subelemento, em formato numérico). Receberá os seguintes dados no formato de tabela, contendo colunas **Elemento_de_Despesa** e **Empenhado_float**. Também receberá uma pergunta específica relacionada a esses dados.
+
+                            Sua tarefa é:
+                            1. Ler e interpretar os dados fornecidos.
+                            2. Responder à pergunta específica de forma precisa e objetiva, fornecendo cálculos, observações e justificativas quando necessário.
+                            3. Apresentar um relatório com os resultados de maneira clara, incluindo métricas e insights relevantes.
+                            
+                            # Dados Fornecidos:
+                            {csv_data}
+                            
+                            # Pergunta Específica:
+                            {pergunta}
+                            """
+                        # Definir a chave de API do Gemini (use a chave fornecida pela sua conta)
+                        genai.configure(api_key=os.environ["GEMINI_KEY"])
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        with st.spinner("Pensando..."):
+                            response = model.generate_content(prompt_agregation)
+                            st.write(response.text.replace("R$ ", "R\$ "))
+                if analise == 'Análise Padrão':
+                    if st.button("Gerar Análise Padrão", key="gerar_analise",type="primary",use_container_width=True):
+                        csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
+                        prompt_agregation = f"""### Prompt para Análise de Elementos de Despesa
+
+                        Você é o analista financeiro especializado em despesas públicas da Câmara Municipal de Pinhão. Receberá uma tabela com duas colunas: **Elemento_de_Despesa** (identificador e descrição do tipo de despesa) e **Empenhado_float** (valor total empenhado para cada elemento, em formato numérico). Sua tarefa é realizar as seguintes análises e responder:
+
+                        1. **Total Geral Empenhado**: Calcule a soma total de todos os valores da coluna **Empenhado_float**.
+                        2. **Elementos Mais e Menos Impactantes**:
+                        - Identifique o elemento com o maior valor empenhado.
+                        - Identifique o elemento com o menor valor empenhado.
+                        3. **Proporção dos Principais Gastos**:
+                        - Calcule o percentual do total que os dois maiores elementos representam.
+                        4. **Observações Relevantes**:
+                        - Faça uma observação sobre a concentração de valores. Existe uma grande disparidade entre os elementos? 
+                        - Sugira como priorizar elementos de maior impacto em uma análise orçamentária.
+
+                        ### Exemplo de Formato de Resposta
+
+                        Dados fornecidos:
+                        ```
+                        3190110000 - VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL    2881304.04
+                        3190130000 - OBRIGACOES PATRONAIS                      642580.51
+                        3390350000 - SERVICOS DE CONSULTORIA                  514500
+                        3390400000 - SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO     340698.44
+                        3390140000 - DIARIAS - CIVIL                          297440
+                        3390390000 - OUTROS SERV.TERCEIROS-PESSOA JURIDICA    230597.91
+                        3390300000 - MATERIAL DE CONSUMO                     98093.28
+                        3390360000 - OUTROS SERV.DE TERCEIROS-PESSOA FISICA  75152
+                        4490520000 - EQUIPAMENTOS E MATERIAL PERMANENTE       59744.9
+                        ```
+
+                        Resposta:
+                        1. **Total Geral Empenhado**: R$ 4.659.411,08
+                        2. **Elementos Mais e Menos Impactantes**:
+                        - Maior valor empenhado: 3190110000 - VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL (R$ 2.881.304,04)
+                        - Menor valor empenhado: 4490520000 - EQUIPAMENTOS E MATERIAL PERMANENTE (R$ 59.744,90)
+                        3. **Proporção dos Principais Gastos**:
+                        - Os dois maiores elementos representam 75,65% do total empenhado.
+                        4. **Observações Relevantes**:
+                        - Existe alta concentração de gastos em **VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL**, representando mais de 60% do total. Isso indica que a maior parte do orçamento está sendo destinada a despesas de pessoal.
+                        - Sugere-se priorizar o monitoramento dos maiores elementos de despesa, uma vez que representam a maior fatia do orçamento.
+
+                        # Dados Fornecidos:
+                        {csv_data}
+                        """
+                        # Definir a chave de API do Gemini (use a chave fornecida pela sua conta)
+                        genai.configure(api_key=os.environ["GEMINI_KEY"])
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        with st.spinner("Pensando..."):
+                            response = model.generate_content(prompt_agregation)
+                            st.write(response.text.replace("R$ ", "R\$ "))
+                
     
     with tab2:
         st.write('Ainda não implementado.')
@@ -857,8 +950,7 @@ def run():
 
         conteiner_chat = st.container()
         
-        while len(st.session_state.messages) > 10:
-            st.session_state.messages.pop(0)
+        
         
         with column_novo:
             if st.button("Novo", use_container_width=True):
@@ -1272,3 +1364,4 @@ def plot_empenhos_simples(df: pd.DataFrame):
 
     # Exibe o gráfico no Streamlit
     st.plotly_chart(fig, use_container_width=True, height=800)
+    return df_agg
