@@ -14,28 +14,33 @@
 
 * **Soluções de Ciência de Dados a Serem Desenvolvidas:**
   * Dashboard interativo para visualização referente à despesa pública.
-  * Modelos de aprendizado de máquina para classificação automática de credores e detecção de anomalias em registros financeiros.
-  * Ferramentas de análise para previsão de tendências sazonais e necessidades orçamentárias.
-  * **Novas Funcionalidades:**
-    * APIs desenvolvidas com FastAPI para consultar e inserir dados no banco MongoDB.
-    * Integração do scraper com BeautifulSoup para coleta diária de dados.
-    * Implementação de funcionalidades de LLMs utilizando Langchain.
-    * Potencial integração com WhatsApp para notificações e uso de Scrapy para monitoramento de disponibilidade de sites.
-    * **Chatbot com IA:** Implementação de um chatbot utilizando Langchain e OpenAI para facilitar consultas e interações com os dados financeiros.
+  * **Gráficos Dinâmicos:**
+    * **Gráfico de Contagem e Valores Totais de Empenhos:** Foco na contagem e nos valores totais dos empenhos.
+    * **Gráfico de Subelementos e Elementos de Despesa:** Foco na quantidade e valores relativos aos subelementos e elementos de despesa empenhados.
+  * IA geradora de relatórios (Padrão e Personalizado): Capacidade de gerar análises ou relatórios baseados nos dados refletidos no Gráfico de Subelementos e Elementos de Despesa, permitindo tanto análises padrão quanto solicitações de análises específicas pelo usuário.
+  * APIs desenvolvidas com FastAPI para consultar e inserir dados no banco MongoDB.
+  * Integração do scraper com BeautifulSoup para coleta diária de dados.
+  * Implementação de funcionalidades de LLMs utilizando Langchain.
+  * Potencial integração com WhatsApp para notificações e uso de Scrapy para monitoramento de disponibilidade de sites.
+  * **Chatbot com IA:** Implementação de um chatbot utilizando Langchain e OpenAI com conhecimento sobre CPFs e CNPJs de credores, valores empenhados para cada credor, e valores empenhados por elemento ou subelemento, facilitando consultas e interações com os dados financeiros.
 
 * **O que faremos:**
   * Coletar dados financeiros dos Portais de Transparência, central de dados do governo e sistemas internos de contabilidade.
   * Realizar análise exploratória de dados (EDA) para entender a estrutura e qualidade dos dados.
-  * Desenvolver e implementar modelos de aprendizado de máquina para atender às necessidades identificadas.
   * Criar uma aplicação web utilizando Streamlit para disponibilizar os resultados para os Controles Internos.
   * Desenvolver e implementar APIs com FastAPI para facilitar a consulta e inserção de dados.
   * Configurar um scraper com BeautifulSoup para coleta automática diária de dados e migração para o banco de dados final.
-  * **Desenvolver e Integrar Chatbot com IA:** Utilizar Langchain e OpenAI para criar um chatbot que permita consultas avançadas e notificações, melhorando a interatividade e a acessibilidade às informações financeiras.
+  * Desenvolver e integrar Chatbot com IA: Utilizar Langchain e OpenAI para criar um chatbot que permita consultas avançadas e notificações, melhorando a interatividade e a acessibilidade às informações financeiras.
+  * **Implementar gráficos dinâmicos para visualização detalhada das despesas:**
+    * **Gráfico de Contagem e Valores Totais de Empenhos:** Visualização da quantidade e valores totais dos empenhos realizados.
+    * **Gráfico de Subelementos e Elementos de Despesa:** Detalhamento das quantidades e valores relativos aos subelementos e elementos de despesa empenhados.
+  * Desenvolver uma IA geradora de relatórios que permita a criação de análises padrão e personalizadas com base nos dados disponíveis.
 
 * **Consumo pelo Cliente:**
   * A solução será acessível via interface web existente, permitindo que os Controles Internos das câmaras e prefeituras municipais utilizem a aplicação para monitorar e analisar as finanças públicas de seus municípios de forma eficiente e intuitiva.
   * As novas funcionalidades de relatórios e LLMs serão acessíveis através de interfaces adicionais alimentadas pelas APIs desenvolvidas.
   * **Interação via Chatbot:** Os usuários poderão interagir com o chatbot diretamente no dashboard ou através de notificações, facilitando o acesso rápido a informações específicas e detalhadas.
+  * **Gráficos Dinâmicos e Relatórios:** Usuários poderão visualizar gráficos interativos e gerar relatórios detalhados diretamente pela interface web.
 
 ### Personnel
 
@@ -56,7 +61,6 @@
 * **Métricas Quantitativas:**
   * Reduzir o tempo médio necessário para análises financeiras em pelo menos 50%.
   * Atingir uma precisão de 95% na detecção de anomalias e padrões suspeitos.
-  * Melhorar a acurácia das previsões orçamentárias em pelo menos 80% comparado aos métodos tradicionais.
   * Alcançar uma satisfação do usuário de 85% em termos de facilidade de uso da aplicação.
   * **Novos Indicadores de Desempenho:**
     * Acurácia das LLMs em 90%.
@@ -64,28 +68,39 @@
     * **Desempenho do Chatbot:**
       * Tempo de resposta do chatbot inferior a 2 segundos.
       * Taxa de satisfação das interações com o chatbot acima de 80%.
+    * **Indicadores Adicionais:**
+      * Utilização dos gráficos dinâmicos por 70% dos usuários.
+      * Geração de relatórios personalizados por 60% dos usuários.
+    * **Desempenho da IA Geradora de Relatórios:**
+      * Precisão das análises geradas em 90%.
+      * Tempo de geração de relatórios inferior a 5 segundos.
 
 * **Baseline e Metodologia de Medição:**
   * **Baseline:** Tempo atual de análise financeira, precisão na detecção de anomalias e previsões orçamentárias serão registrados antes da implementação.
   * **Medidas:** Acompanhamento contínuo através de feedback dos usuários, análise de logs da aplicação e comparações periódicas com os valores de baseline.
   * **Avaliação do Chatbot:** Utilização de métricas como tempo de resposta, precisão das respostas e satisfação do usuário para medir a eficácia do chatbot.
+  * **Avaliação dos Gráficos Dinâmicos e IA de Relatórios:** Monitoramento do uso e feedback dos usuários para aprimoramento contínuo.
 
 ### Plan (Plano de Projeto)
 
 1. **Planejamento e Definição de Escopo:** Identificar stakeholders, definir objetivos detalhados, criar o Project Charter. *(15 dias)*
 2. **Aquisição e Entendimento dos Dados:** Coleta de dados, EDA, validação de dados. *(15 dias)*
-3. **Desenvolvimento de Modelos:** Criação e teste de modelos de aprendizado de máquina para classificação de credores e detecção de anomalias. *(1 mês)*
-4. **Desenvolvimento do Dashboard:** Implementação da interface web, integração dos modelos de ML. *(1 mês)*
-5. **Desenvolvimento e Integração do Chatbot com IA:**
+3. **Desenvolvimento do Dashboard:** Implementação da interface web, integração dos modelos de ML. *(1 mês)*
+4. **Desenvolvimento e Integração do Chatbot com IA:**
    - **Desenvolvimento do Chatbot:** Utilizar Langchain e OpenAI para criar o chatbot. *(2 semanas)*
    - **Integração com Dashboard:** Integrar o chatbot ao dashboard existente, garantindo que as consultas possam ser feitas diretamente pela interface. *(2 semanas)*
-6. **Testes e Validação:** Testes com usuários finais, ajuste de funcionalidades, melhoria contínua. *(1 mês)*
-7. **Implementação em Produção:** Lançamento da aplicação, treinamento de usuários, documentação. *(15 dias)*
+5. **Desenvolvimento de Gráficos Dinâmicos:**
+   - **Gráfico de Contagem e Valores Totais de Empenhos e Gráfico de Subelementos e Elementos de Despesa:** Implementação de gráficos dinâmicos para visualização detalhada das despesas. *(3 semanas)*
+6. **Desenvolvimento da IA Geradora de Relatórios:**
+   - **Relatórios Padrão e Personalizados:** Implementação da IA para geração de análises e relatórios com base nos dados dos Gráficos Dinâmicos. *(3 semanas)*
+7. **Testes e Validação:** Testes com usuários finais, ajuste de funcionalidades, melhoria contínua. *(1 mês)*
+8. **Implementação em Produção:** Lançamento da aplicação, treinamento de usuários, documentação. *(15 dias)*
 
 * **Novas Etapas e Alterações no Cronograma:**
   * **Integração de FastAPI e Scraper:** Desenvolver e implementar APIs com FastAPI e configurar o scraper com BeautifulSoup para coleta diária de dados. *(Paralelamente às etapas existentes)*
   * **Medidas de Segurança da API:** Implementar autenticação e autorização para garantir a segurança dos dados na API. *(Paralelamente às etapas existentes)*
   * **Desenvolvimento e Integração do Chatbot com IA:** Adicionar duas semanas para o desenvolvimento e duas semanas para a integração do chatbot com a aplicação existente.
+  * **Implementação de Gráficos Dinâmicos e IA de Relatórios:** Adicionar etapas específicas para o desenvolvimento e integração dessas funcionalidades.
 
 ### Architecture (Arquitetura)
 
@@ -104,22 +119,16 @@
     * Scripts de scraping automatizados alimentando dados no banco de dados MongoDB.
     * **Chatbot com IA:** Integração do chatbot com Langchain e OpenAI para permitir consultas avançadas e notificações automatizadas.
     * **Banco de Dados Vetorial:** Utilização para armazenar e recuperar embeddings, melhorando a eficiência das respostas do chatbot.
-
-* **Diagramas de Fluxo de Dados:**
-  * Atualizar os diagramas para incluir as novas integrações com FastAPI, o fluxo de dados entre o scraper, o banco de dados MongoDB, o banco de dados vetorial e a aplicação Streamlit.
-  * Incluir o fluxo de interação do chatbot com o banco de dados vetorial e as notificações na interface do usuário.
+    * **Gráficos Dinâmicos:** Implementação dos Gráficos de Contagem e Valores Totais de Empenhos e Subelementos e Elementos de Despesa para visualização detalhada das despesas.
+    * **IA Geradora de Relatórios:** Integração da IA para geração de relatórios padrão e personalizados com base nos dados dos gráficos dinâmicos.
 
 ### Communication (Comunicação)
 
-* **Reuniões Mensais:** Reuniões semanais de acompanhamento com a equipe de projeto para monitorar o
-
-progresso e ajustar o cronograma conforme necessário.
+* **Reuniões Mensais:** Reuniões semanais de acompanhamento com a equipe de projeto para monitorar o progresso e ajustar o cronograma conforme necessário.
 * **Relatórios de Progresso Mensais:** Relatórios mensais para stakeholders para manter todos informados sobre o progresso do projeto.
 * **Contato de Comunicação:**
-  - **Equipe Técnica:** Whatsapp
-  - **Cliente:** Whatsapp
-  - **Novas Formas de Comunicação:**
-    * **Chatbot:** Pode servir como um canal adicional de comunicação para esclarecimento de dúvidas rápidas e suporte aos usuários.
+  - **Equipe Técnica:** WhatsApp
+  - **Cliente:** WhatsApp
 
 ---
 
@@ -132,9 +141,9 @@ progresso e ajustar o cronograma conforme necessário.
    - A utilização de um banco de dados vetorial para armazenar embeddings permite uma busca eficiente e recuperação de informações relevantes, otimizando o processo de análise e resposta a consultas.
 
 2. **Uso de Inteligência Artificial:**
-   - **Modelos de Machine Learning:** Melhoram a capacidade de detecção de anomalias e padrões suspeitos nas despesas financeiras, aumentando a transparência e a segurança na gestão pública.
    - **Chatbot com IA:** Facilita o acesso às informações financeiras, permitindo que os usuários façam consultas rápidas e recebam respostas precisas, promovendo uma maior interação e compreensão dos dados.
    - **LLMs e Engenharia de Prompts:** A utilização de Langchain e OpenAI para criar o chatbot demonstra a aplicação avançada de modelos de linguagem para resolver problemas de acessibilidade e interatividade com grandes volumes de dados.
+   - **IA Geradora de Relatórios:** Automatiza a criação de análises e relatórios, aumentando a eficiência e permitindo que os usuários obtenham insights detalhados rapidamente.
 
 3. **Engenharia de Prompts:**
    - A definição de prompts eficazes para o chatbot garante que as consultas sejam interpretadas corretamente e que as respostas sejam relevantes e úteis, melhorando a experiência do usuário e a eficiência na obtenção de informações.
@@ -143,9 +152,20 @@ progresso e ajustar o cronograma conforme necessário.
    - **Transparência e Monitoramento:** A integração de dados e o uso de IA permitem um monitoramento contínuo e transparente das finanças públicas, facilitando a identificação de fraudes e desvios.
    - **Eficiência e Automação:** A automação das tarefas de coleta e análise de dados reduz significativamente o tempo necessário para realizar análises financeiras, aumentando a eficiência operacional.
    - **Tomada de Decisões Informadas:** As ferramentas desenvolvidas fornecem insights detalhados e precisos, apoiando a tomada de decisões baseadas em dados e contribuindo para uma gestão pública mais eficaz e responsável.
-
-**Conclusão:**
-
-A atualização da **Project Charter** reflete a evolução do projeto, incorporando novas tecnologias e funcionalidades que alinham diretamente com os objetivos de resolver os problemas de negócio identificados. A integração de APIs, web scraping, IA e engenharia de prompts fortalece a capacidade do projeto de fornecer soluções robustas e eficientes para o monitoramento e análise das finanças públicas, promovendo maior transparência, segurança e eficiência na gestão financeira das câmaras e prefeituras municipais do eixo Bahia|Sergipe.
+   - **Análises Detalhadas e Personalizadas:** A capacidade de gerar relatórios personalizados permite que os usuários obtenham informações específicas conforme suas necessidades, aumentando a relevância e a utilidade das análises fornecidas.
 
 ---
+
+### Resumo das Inclusões:
+
+1. **Gráficos Dinâmicos:**
+   - **Gráfico de Contagem e Valores Totais de Empenhos**
+   - **Gráfico de Subelementos e Elementos de Despesa**
+   Adicionados na seção **Scope** e **Architecture** para detalhar a visualização das despesas públicas.
+
+2. **IA Geradora de Relatórios (Padrão e Personalizado):**
+   Integrada no **Scope**, **Architecture**, e **Metrics** para automatizar e personalizar análises financeiras.
+
+3. **Chatbot Aprimorado com Conhecimento sobre CPFs e CNPJs:**
+   Atualizado nas seções **Scope**, **Architecture**, e **Metrics** para incluir funcionalidades avançadas de consulta e interatividade.
+
