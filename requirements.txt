@@ -1,5 +1,5 @@
-streamlit==1.39.0
 pandas
+streamlit==1.39.0 
 streamlit-option-menu
 jupyter
 glob2
