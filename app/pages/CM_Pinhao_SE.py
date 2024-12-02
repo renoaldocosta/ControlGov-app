@@ -858,7 +858,7 @@ def run():
                 with col1[1]:
                     analise = st.radio("Análise", ['Análise Padrão', 'Análise Personalizada'], key="tipo_analise")
                 if analise == 'Análise Personalizada':
-                    pergunta = st.text_area("**Escreva a pergunta para a análise personalizada:**",value="Qual a proporção dos empenhos realizados com obrigações patrimoniais e as demais despesas de pessoal?",placeholder="Digite sua pergunta aqui...", key="pergunta", help="Escreva a pergunta que deseja responder com base nos dados fornecidos.")
+                    pergunta = st.text_area("**Escreva a pergunta para a análise personalizada:**",value="Qual a proporção dos empenhos realizados com obrigações patronais e as demais despesas de pessoal?",placeholder="Digite sua pergunta aqui...", key="pergunta", help="Escreva a pergunta que deseja responder com base nos dados fornecidos.")
                     
                     if st.button("Gerar Relatório Personalizado", key="gerar_analise",type="primary",use_container_width=True):
                         csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
