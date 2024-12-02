@@ -26,3 +26,4 @@ langchain-openai
 langchain
 langchain_community
 pyowm
+google-generativeai
