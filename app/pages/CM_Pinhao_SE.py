@@ -1,4 +1,5 @@
 import os
+from openai import OpenAI
 import time
 from datetime import date
 
@@ -862,6 +863,13 @@ def run():
                     
                     if st.button("Gerar Relatório Personalizado", key="gerar_analise",type="primary",use_container_width=True):
                         csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
+                        try:
+                            # Soma total Empenhado_float
+                            soma_total = df_agg['Empenhado_float'].sum()
+                            soma_total = "OBS: A soma total dos Valores empenhados é: R$ " + str(soma_total)
+                            csv_data += "\n" + soma_total
+                        except:
+                            pass
                         today = date.today()
                         prompt_agregation = f"""### Prompt para Análise de Elementos de Despesa
                             Câmara de Pinhão/SE, {today.strftime("%d/%m/%Y")}
@@ -877,16 +885,27 @@ def run():
                             
                             # Pergunta Específica:
                             {pergunta}
+                            
+                            Atenção: 
+                            - Crie uma tabela com os dados Fornecidos!
+                            - Não mencione o nome da coluna 'Empenhado_float'
                             """
                         # Definir a chave de API do Gemini (use a chave fornecida pela sua conta)
                         genai.configure(api_key=os.environ["GEMINI_KEY"])
-                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        model = genai.GenerativeModel("gemini-1.5-pro")
                         with st.spinner("Pensando..."):
                             response = model.generate_content(prompt_agregation)
                             st.write(response.text.replace("R$ ", "R\$ "))
                 if analise == 'Análise Padrão':
                     if st.button("Gerar Análise Padrão", key="gerar_analise",type="primary",use_container_width=True):
                         csv_data = df_agg.to_csv(index=False, encoding='utf-8', sep=';')
+                        try:
+                            # Soma total Empenhado_float
+                            soma_total = df_agg['Empenhado_float'].sum()
+                            soma_total = "OBS: A soma total dos Valores empenhados é: R$ " + str(soma_total)
+                            csv_data += "\n" + soma_total
+                        except:
+                            pass
                         prompt_agregation = f"""### Prompt para Análise de Elementos de Despesa
 
                         Você é o analista financeiro especializado em despesas públicas da Câmara Municipal de Pinhão. Receberá uma tabela com duas colunas: **Elemento_de_Despesa** (identificador e descrição do tipo de despesa) e **Empenhado_float** (valor total empenhado para cada elemento, em formato numérico). Sua tarefa é realizar as seguintes análises e responder:
@@ -905,15 +924,8 @@ def run():
 
                         Dados fornecidos:
                         ```
-                        3190110000 - VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL    2881304.04
-                        3190130000 - OBRIGACOES PATRONAIS                      642580.51
-                        3390350000 - SERVICOS DE CONSULTORIA                  514500
-                        3390400000 - SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO     340698.44
-                        3390140000 - DIARIAS - CIVIL                          297440
-                        3390390000 - OUTROS SERV.TERCEIROS-PESSOA JURIDICA    230597.91
-                        3390300000 - MATERIAL DE CONSUMO                     98093.28
-                        3390360000 - OUTROS SERV.DE TERCEIROS-PESSOA FISICA  75152
-                        4490520000 - EQUIPAMENTOS E MATERIAL PERMANENTE       59744.9
+                        3190110000 - VENCIM.E VANTAGENS FIXAS-PESSOAL CIVIL    R$ 2.881.304,04
+                        ...
                         ```
 
                         Resposta:
@@ -929,13 +941,41 @@ def run():
 
                         # Dados Fornecidos:
                         {csv_data}
+                        
+                        Atenção: 
+                        - Crie uma tabela com os dados Fornecidos!
+                        - Não mencione o nome da coluna 'Empenhado_float'
                         """
                         # Definir a chave de API do Gemini (use a chave fornecida pela sua conta)
                         genai.configure(api_key=os.environ["GEMINI_KEY"])
-                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        model = genai.GenerativeModel("gemini-1.5-pro") # gemini-1.5-flash
                         with st.spinner("Pensando..."):
                             response = model.generate_content(prompt_agregation)
                             st.write(response.text.replace("R$ ", "R\$ "))
+                        
+                        
+                        # Configure a chave de API da OpenAI (substitua pelo valor correto)
+                        # client = OpenAI(
+                        #     api_key=os.environ.get("OPENAI_API_KEY"),  # This is the default and can be omitted
+                        # )
+
+
+                        # with st.spinner("Pensando..."):
+                        #     try:
+                        #         generated_text = client.chat.completions.create(
+                        #             messages=[
+                        #                 {"role": "system", "content": "Você é um assistente útil."},
+                        #                 {"role": "user", "content": prompt_agregation}
+                        #             ],
+                        #             model="gpt-4o",
+                        #         )
+                        #         generated_text_dict = generated_text.to_dict()
+                        #         st.write(generated_text_dict['choices'][0]['message']['content'])
+                        #     except Exception as e:
+                        #         st.error(f"Ocorreu um erro ao gerar o conteúdo: {e}")
+
+
+
                 
     
     with tab2:

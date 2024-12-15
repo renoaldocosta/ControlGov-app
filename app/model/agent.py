@@ -18,6 +18,8 @@ from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
 # LangChain OpenAI
 from langchain_openai.chat_models import ChatOpenAI
 
+from ..services.scrap import consultar_atualizacao_atos_legais_infralegais, consultar_atualizacao_projetos_atos_legais_infralegais
+# Own modules
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -138,10 +140,59 @@ def listar_empenhos_por_elemento(query=None):
     except ValueError:
         return "Erro ao processar a resposta da API."
 
+# Função que consulta google para obter informações sobre um termo contábil ou financeiro
+def consultar_atualizacao_atos_legais_infralegais_cmp(query=None) -> str:
+    """
+    Extrai dados da tabela da página especificada, processa-os e gera um relatório.
+    
+    Retorna:
+        resposta (pd.DataFrame ou str): DataFrame contendo o relatório gerado ou uma mensagem de erro.
+    """
+    # URL da página
+    resposta = consultar_atualizacao_atos_legais_infralegais()
+    return resposta 
+
+def consultar_atualizacao_projetos_atos_legais_infralegais_cmp(query=None) -> str:
+    """
+    Extrai dados da tabela da página especificada, processa-os e gera um relatório.
+    
+    Retorna:
+        resposta (pd.DataFrame ou str): DataFrame contendo o relatório gerado ou uma mensagem de erro.
+    """
+    # URL da página
+    resposta = consultar_atualizacao_projetos_atos_legais_infralegais()
+    return resposta
+
 # Função que gera a resposta do agente de atendimento
 def load_agent(text):
     # Consultar CPF ou CNPJ
     text = "Me responda apenas:\n" + text
+    
+    # Define ferraenta de consulta de atualização de atos legais e infralegais    
+    atualizacao_projetos_atos_legais_infralegais = Tool(
+        name="Consultar Atualização de Projetos de Atos Legais e Infralegais",
+        func=consultar_atualizacao_projetos_atos_legais_infralegais_cmp,
+        description=(
+            "Use esta ferramenta para obter informações sobre a atualização dos projetos de atos legais e infralegais da Câmara Municipal de Pinhão/SE."
+            "Atenção: Ordenar pela data mais recente."
+            "Trate NAN como 'Não informado'."
+            "Informar: Projeto e Data de Apresentação."
+            "Formato de retorno: <LISTA> - Projeto -> Data de Apresentação(dd/mm/yyyy)"
+        ),
+    )
+    
+    # Define ferraenta de consulta de atualização de atos legais e infralegais
+    atualizacao_atos_legais_infralegais = Tool(
+        name="Consultar Atualização de Atos Legais e Infralegais",
+        func=consultar_atualizacao_atos_legais_infralegais_cmp,
+        description=(
+            "Use esta ferramenta para obter informações sobre a atualização dos atos legais e infralegais da Câmara Municipal de Pinhão/SE."
+            "Atenção: Ordenar pela data mais recente."
+            "Trate NAN como 'Não informado'."
+            "Informar: Tipo Aprovado,Tipo de Matéria - Numeração e Data de Publicação."
+            "Formato de retorno: <LISTA> - Tipo de Matéria - Numração -> Data de Publicação(dd/mm/yyyy)"
+        ),
+    )
 
     consultar_cpf_cnpj_tool = Tool(
         name="Consultar CPF ou CNPJ",
@@ -186,7 +237,8 @@ def load_agent(text):
         empenhos_por_elemento_tool,
         empenho_pessoa_fisica_juridica,
         consultar_cpf_cnpj_tool,
-        # categoria_tool  # Adiciona a nova ferramenta aqui
+        atualizacao_atos_legais_infralegais,
+        atualizacao_projetos_atos_legais_infralegais,
     ]
 
 
@@ -198,6 +250,8 @@ def load_agent(text):
     - Elementos e subelementos de despesa
     - Consultas aos valores empenhados a Pessoas Físicas e Jurídicas
     - Consultas a CPF ou CNPJ dos credores
+    - Consultar Atualização de Atos Legais e Infralegais
+    - Consultar Atualização de Projetos de Atos Legais e Infralegais
 
     ## Ferramentas Disponíveis
 
@@ -212,8 +266,12 @@ def load_agent(text):
     3. Consultar Subelemento Individualmente
     - *Descrição:* Use esta ferramenta para obter informações sobre valores empenhados por subelementos de despesa.
     
-    4. Consultar o total empenhado para todos os Elementos de uma Vez
-    - *Descrição:* Use esta ferramenta para obter a lista de valores empenhados por elemento de despesa.
+    4. Consultar Atualização de Atos Legais e Infralegais
+    - *Descrição:* Use esta ferramenta para Consultar Atualização de Atos Legais e Infralegais da camara municipal de Pinhao.
+    
+    5. Consultar Atualização de Projetos de Atos Legais e Infralegais
+    - *Descrição:* Use esta ferramenta para Consultar Atualização de Projetos de Atos Legais e Infralegais da camara municipal de Pinhao.
+
 
     ## Instruções para Uso das Ferramentas
 
